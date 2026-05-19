@@ -13,6 +13,21 @@ const senderIdOf = (msg) => {
   return (s._id || s).toString();
 };
 
+const receiverIdOf = (msg) => {
+  const r = msg?.receiverId;
+  if (!r) return '';
+  return (r._id || r).toString();
+};
+
+const isThreadMessage = (msg, partnerId, myId) => {
+  if (!msg || !partnerId || !myId) return false;
+  const sender = senderIdOf(msg);
+  const receiver = receiverIdOf(msg);
+  return (
+    (sender === partnerId && receiver === myId) || (sender === myId && receiver === partnerId)
+  );
+};
+
 export default function Chat() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -78,7 +93,10 @@ export default function Chat() {
       const nextMessages = res.data?.messages || [];
       setRoomId(nextRoom);
       roomIdRef.current = nextRoom;
-      setMessages(nextMessages);
+      setMessages((prev) => {
+        if (quiet && nextMessages.length === 0 && prev.length > 0) return prev;
+        return nextMessages;
+      });
     } catch (err) {
       if (!quiet) {
         setHistoryError(err.message || 'Could not load messages');
@@ -137,8 +155,9 @@ export default function Chat() {
     };
 
     const onReceive = (msg) => {
-      const activeRoom = roomIdRef.current;
-      if (msg.roomId && activeRoom && msg.roomId !== activeRoom) return;
+      const partnerId = selectedIdRef.current;
+      const myId = userIdRef.current?.toString();
+      if (!isThreadMessage(msg, partnerId, myId)) return;
       appendMessage(msg);
     };
 
@@ -322,11 +341,12 @@ export default function Chat() {
                 {!historyLoading && !historyError && messages.length === 0 ? (
                   <p className="muted">No messages yet. Say hello.</p>
                 ) : null}
-                {messages.map((m) => {
+                {messages.map((m, index) => {
                   const mine = senderIdOf(m) === myId;
+                  const key = m._id?.toString() || `msg-${index}`;
                   return (
                     <article
-                      key={m._id}
+                      key={key}
                       className={`chat-bubble${mine ? ' chat-bubble--mine' : ''}`}
                     >
                       <p>{m.message}</p>
