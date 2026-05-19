@@ -125,10 +125,19 @@ export const galleryApi = {
 export const chatApi = {
   getPartners: () => apiFetch('/chat/partners'),
   getHistory: (receiverId, bookingId) => {
-    const params = new URLSearchParams({ receiverId });
-    if (bookingId) params.set('bookingId', bookingId);
+    const params = new URLSearchParams({ receiverId: String(receiverId) });
+    if (bookingId) params.set('bookingId', String(bookingId));
     return apiFetch(`/chat/history?${params}`);
   },
+  sendMessage: (receiverId, message, bookingId) =>
+    apiFetch('/chat/messages', {
+      method: 'POST',
+      body: JSON.stringify({
+        receiverId: String(receiverId),
+        message,
+        ...(bookingId ? { bookingId: String(bookingId) } : {}),
+      }),
+    }),
   getConversations: () => apiFetch('/chat/conversations'),
 };
 
