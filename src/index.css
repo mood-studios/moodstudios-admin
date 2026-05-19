@@ -1058,13 +1058,37 @@ textarea {
   max-width: 75%;
   padding: 0.65rem 0.85rem;
   border-radius: 12px;
-  background: var(--purple-pale);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.chat-bubble--theirs {
+  align-self: flex-start;
+  background: #f0f0f5;
+  border: 1px solid var(--border);
 }
 
 .chat-bubble--mine {
   align-self: flex-end;
   background: linear-gradient(135deg, var(--purple), #7a0cd4);
   color: #fff;
+}
+
+.chat-bubble__sender {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.chat-bubble--theirs .chat-bubble__sender {
+  color: var(--purple);
+}
+
+.chat-bubble--mine .chat-bubble__sender {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .chat-bubble p {
@@ -1074,6 +1098,7 @@ textarea {
 .chat-bubble time {
   font-size: 0.65rem;
   opacity: 0.7;
+  align-self: flex-end;
 }
 
 .chat-compose {

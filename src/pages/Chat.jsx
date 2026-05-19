@@ -19,13 +19,22 @@ const receiverIdOf = (msg) => {
   return (r._id || r).toString();
 };
 
-const isThreadMessage = (msg, partnerId, myId) => {
-  if (!msg || !partnerId || !myId) return false;
-  const sender = senderIdOf(msg);
-  const receiver = receiverIdOf(msg);
-  return (
-    (sender === partnerId && receiver === myId) || (sender === myId && receiver === partnerId)
-  );
+const isThreadMessage = (msg, partnerId) => {
+  if (!msg || !partnerId) return false;
+  const customer = String(partnerId);
+  return senderIdOf(msg) === customer || receiverIdOf(msg) === customer;
+};
+
+/** In admin view: customer = selected partner; studio = any admin (incl. other admins). */
+const isCustomerMessage = (msg, customerId) => {
+  if (!msg || !customerId) return false;
+  return senderIdOf(msg) === String(customerId);
+};
+
+const senderNameOf = (msg) => {
+  const s = msg?.senderId;
+  if (s && typeof s === 'object' && s.name) return s.name;
+  return null;
 };
 
 export default function Chat() {
@@ -156,8 +165,7 @@ export default function Chat() {
 
     const onReceive = (msg) => {
       const partnerId = selectedIdRef.current;
-      const myId = userIdRef.current?.toString();
-      if (!isThreadMessage(msg, partnerId, myId)) return;
+      if (!isThreadMessage(msg, partnerId)) return;
       appendMessage(msg);
     };
 
@@ -235,7 +243,7 @@ export default function Chat() {
     appendMessage({
       _id: tempId,
       message: trimmed,
-      senderId: { _id: user._id, name: user.name },
+      senderId: { _id: user._id, name: user.name, role: 'admin' },
       createdAt: new Date().toISOString(),
       roomId: roomIdRef.current,
     });
@@ -271,6 +279,7 @@ export default function Chat() {
 
   const selected = customers.find((c) => String(c._id) === String(selectedId));
   const myId = user?._id?.toString();
+  const customerLabel = selected?.name?.split(' ')[0] || 'Customer';
 
   const socketLabel =
     socketStatus === 'connected'
@@ -342,13 +351,19 @@ export default function Chat() {
                   <p className="muted">No messages yet. Say hello.</p>
                 ) : null}
                 {messages.map((m, index) => {
-                  const mine = senderIdOf(m) === myId;
+                  const fromCustomer = isCustomerMessage(m, selectedId);
+                  const fromStudio = !fromCustomer;
                   const key = m._id?.toString() || `msg-${index}`;
+                  const senderLabel = fromCustomer
+                    ? customerLabel
+                    : senderNameOf(m) || user?.name?.split(' ')[0] || 'Studio';
                   return (
                     <article
                       key={key}
-                      className={`chat-bubble${mine ? ' chat-bubble--mine' : ''}`}
+                      className={`chat-bubble${fromStudio ? ' chat-bubble--mine' : ' chat-bubble--theirs'}`}
+                      aria-label={`${senderLabel}: ${m.message}`}
                     >
+                      <span className="chat-bubble__sender">{senderLabel}</span>
                       <p>{m.message}</p>
                       <time>{new Date(m.createdAt).toLocaleTimeString()}</time>
                     </article>
