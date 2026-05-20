@@ -181,7 +181,7 @@ export default function Dashboard() {
 
   const chartWidth = 700;
   const chartHeight = 220;
-  const chartPadding = { top: 16, right: 16, bottom: 28, left: 40 };
+  const chartPadding = { top: 12, right: 8, bottom: 20, left: 28 };
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
   const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
   const yAxisMax = Math.max(5, Math.ceil(trendMax / 5) * 5);
