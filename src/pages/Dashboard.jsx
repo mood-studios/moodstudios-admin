@@ -57,6 +57,34 @@ const buildDailyTrend = (bookings, days) => {
   return labels.map((label) => ({ label, value: map.get(label) || 0 }));
 };
 
+const buildTrendPoints = (data, width, height, padding) => {
+  if (!data.length) return '';
+  const max = Math.max(...data.map((item) => item.value), 1);
+  const innerW = width - padding * 2;
+  const innerH = height - padding * 2;
+  return data
+    .map((item, index) => {
+      const x = padding + (index / Math.max(data.length - 1, 1)) * innerW;
+      const y = padding + (1 - item.value / max) * innerH;
+      return `${x},${y}`;
+    })
+    .join(' ');
+};
+
+const buildDonutGradient = (rows) => {
+  const total = rows.reduce((sum, row) => sum + row.value, 0);
+  if (!total) return 'conic-gradient(#e5e7eb 0deg 360deg)';
+  let offset = 0;
+  return `conic-gradient(${rows
+    .map((row) => {
+      const from = (offset / total) * 360;
+      offset += row.value;
+      const to = (offset / total) * 360;
+      return `${row.color} ${from}deg ${to}deg`;
+    })
+    .join(', ')})`;
+};
+
 export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [customerCount, setCustomerCount] = useState(0);
@@ -121,11 +149,39 @@ export default function Dashboard() {
     .slice(0, 4);
 
   const trendData = buildDailyTrend(windowBookings, selectedWindow.days);
-  const maxTrendValue = trendData.reduce((max, item) => Math.max(max, item.value), 0);
   const rangeRevenue = windowBookings
     .filter((booking) => normalizeStatus(booking.paymentStatus) === 'paid')
     .reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
   const averageBookingValue = windowBookings.length > 0 ? rangeRevenue / windowBookings.length : 0;
+  const paidBookings = paymentBreakdown.paid;
+  const conversionRate = windowBookings.length ? (paidBookings / windowBookings.length) * 100 : 0;
+  const topServiceText = topServices[0]?.[0] || 'No data';
+  const topServiceCount = topServices[0]?.[1] || 0;
+
+  const donutRows = [
+    { label: 'Paid', value: paymentBreakdown.paid, color: '#3b82f6' },
+    { label: 'Unpaid', value: paymentBreakdown.unpaid, color: '#f59e0b' },
+    { label: 'Other', value: paymentBreakdown.other, color: '#94a3b8' },
+  ];
+  const donutTotal = donutRows.reduce((sum, row) => sum + row.value, 0);
+  const donutBackground = buildDonutGradient(donutRows);
+
+  const chartWidth = 700;
+  const chartHeight = 220;
+  const chartPadding = 20;
+  const trendPoints = buildTrendPoints(trendData, chartWidth, chartHeight, chartPadding);
+  const trendMax = Math.max(...trendData.map((item) => item.value), 1);
+
+  const kpiCards = [
+    { label: 'Window bookings', value: windowBookings.length },
+    { label: 'Paid bookings', value: paidBookings },
+    { label: 'Customers', value: customerCount },
+    { label: 'Conversion rate', value: `${conversionRate.toFixed(1)}%` },
+    { label: 'Revenue', value: formatCurrency(rangeRevenue) },
+    { label: 'Avg booking', value: formatCurrency(averageBookingValue) },
+    { label: 'Top service', value: topServiceText, helper: `${topServiceCount} bookings` },
+    { label: 'Pending review', value: pending },
+  ];
 
   return (
     <>
@@ -173,33 +229,76 @@ export default function Dashboard() {
               </label>
             </header>
 
+            <div className="analytics-top">
+              <article className="analytics-card analytics-card--line">
+                <h3>Sessions trend</h3>
+                <svg
+                  className="line-chart"
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                  role="img"
+                  aria-label="Bookings trend line"
+                >
+                  <polyline className="line-chart__line" points={trendPoints} />
+                  {trendData.map((point, index) => {
+                    const x =
+                      chartPadding +
+                      (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
+                    const y = chartPadding + (1 - point.value / trendMax) * (chartHeight - chartPadding * 2);
+                    return (
+                      <circle
+                        key={`${point.label}-${index}`}
+                        className="line-chart__dot"
+                        cx={x}
+                        cy={y}
+                        r="3.2"
+                      >
+                        <title>{`${point.label}: ${point.value} bookings`}</title>
+                      </circle>
+                    );
+                  })}
+                </svg>
+                <div className="line-chart__labels">
+                  <span>{trendData[0]?.label || ''}</span>
+                  <span>{trendData[Math.floor(trendData.length / 2)]?.label || ''}</span>
+                  <span>{trendData[trendData.length - 1]?.label || ''}</span>
+                </div>
+              </article>
+
+              <article className="analytics-card analytics-card--donut">
+                <h3>Sessions</h3>
+                <div className="donut-wrap">
+                  <div className="donut-chart" style={{ background: donutBackground }}>
+                    <div className="donut-chart__center">
+                      <strong>{donutTotal}</strong>
+                      <span>Sessions</span>
+                    </div>
+                  </div>
+                  <ul className="analytics-list analytics-list--legend">
+                    {donutRows.map((row) => (
+                      <li key={row.label}>
+                        <span>
+                          <i style={{ backgroundColor: row.color }} />
+                          {row.label}
+                        </span>
+                        <strong>{row.value}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            </div>
+
+            <div className="kpi-grid">
+              {kpiCards.map((item) => (
+                <article className="kpi-card" key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  {item.helper ? <small>{item.helper}</small> : null}
+                </article>
+              ))}
+            </div>
+
             <div className="analytics-grid">
-              <article className="analytics-card">
-                <h3>Revenue snapshot</h3>
-                <p className="analytics-card__metric">{formatCurrency(rangeRevenue)}</p>
-                <p className="muted">
-                  {windowBookings.length} bookings · Avg ticket {formatCurrency(averageBookingValue)}
-                </p>
-              </article>
-
-              <article className="analytics-card">
-                <h3>Payment health</h3>
-                <ul className="analytics-list">
-                  <li>
-                    <span>Paid</span>
-                    <strong>{paymentBreakdown.paid}</strong>
-                  </li>
-                  <li>
-                    <span>Unpaid</span>
-                    <strong>{paymentBreakdown.unpaid}</strong>
-                  </li>
-                  <li>
-                    <span>Other</span>
-                    <strong>{paymentBreakdown.other}</strong>
-                  </li>
-                </ul>
-              </article>
-
               <article className="analytics-card">
                 <h3>Booking funnel</h3>
                 <ul className="analytics-list">
@@ -211,7 +310,6 @@ export default function Dashboard() {
                   ))}
                 </ul>
               </article>
-
               <article className="analytics-card">
                 <h3>Top services</h3>
                 {topServices.length === 0 ? (
@@ -227,22 +325,6 @@ export default function Dashboard() {
                   </ul>
                 )}
               </article>
-            </div>
-
-            <div className="trend-chart" role="img" aria-label="Bookings trend by day">
-              {trendData.map((point, index) => (
-                <div key={`${point.label}-${index}`} className="trend-chart__bar-wrap">
-                  <div
-                    className="trend-chart__bar"
-                    style={{
-                      height: `${maxTrendValue > 0 ? Math.max(8, (point.value / maxTrendValue) * 100) : 8}%`,
-                    }}
-                    title={`${point.label}: ${point.value} bookings`}
-                  />
-                  <span className="trend-chart__value">{point.value}</span>
-                  <span className="trend-chart__label">{point.label}</span>
-                </div>
-              ))}
             </div>
           </section>
 
