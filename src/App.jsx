@@ -11,6 +11,7 @@ import ActivityLogs from './pages/ActivityLogs';
 import Services from './pages/Services';
 import Categories from './pages/Categories';
 import Gallery from './pages/Gallery';
+import FeaturedPhotos from './pages/FeaturedPhotos';
 import Chat from './pages/Chat';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="services" element={<Services />} />
               <Route path="categories" element={<Categories />} />
               <Route path="gallery" element={<Gallery />} />
+              <Route path="featured-photos" element={<FeaturedPhotos />} />
               <Route path="chat" element={<Chat />} />
             </Route>
           </Route>

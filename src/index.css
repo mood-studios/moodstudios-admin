@@ -910,6 +910,48 @@ textarea {
   cursor: pointer;
 }
 
+.featured-photos-admin .sample-photos-grid__item {
+  aspect-ratio: 3 / 4;
+}
+
+.featured-photos-admin__badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--purple, #960ffa);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.featured-photos-admin__actions {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+}
+
+.featured-photos-admin__actions .sample-photos-grid__remove {
+  position: static;
+}
+
+.featured-photos-saved {
+  color: #15803d;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
 .sample-photos-add input {
   display: none;
 }

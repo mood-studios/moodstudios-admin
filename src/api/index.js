@@ -70,6 +70,15 @@ export const categoryApi = {
   delete: (id) => apiFetch(`/categories/${id}`, { method: 'DELETE' }),
 };
 
+export const featuredPhotoApi = {
+  list: () => apiFetch('/featured-photos'),
+  save: (photos) =>
+    apiFetch('/featured-photos', {
+      method: 'PUT',
+      body: JSON.stringify({ photos }),
+    }),
+};
+
 export const serviceApi = {
   list: (params = {}) => {
     const q = queryString(params);
