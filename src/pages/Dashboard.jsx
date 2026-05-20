@@ -17,6 +17,29 @@ const toDate = (value) => {
   return date && !Number.isNaN(date.getTime()) ? date : null;
 };
 
+const toDayKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const parseBookingDay = (value) => {
+  if (!value) return null;
+
+  if (typeof value === 'string') {
+    const datePart = value.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [y, m, d] = datePart.split('-').map(Number);
+      return new Date(y, m - 1, d, 12, 0, 0, 0);
+    }
+  }
+
+  const date = toDate(value);
+  if (!date) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
+};
+
 const normalizeStatus = (value, fallback = 'unknown') => {
   if (!value || typeof value !== 'string') return fallback;
   return value.toLowerCase();
@@ -36,25 +59,26 @@ const buildDailyTrend = (bookings, days) => {
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (days - 1));
 
-  const labels = [];
+  const buckets = [];
   const map = new Map();
   for (let i = 0; i < days; i += 1) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
+    const dayKey = toDayKey(date);
     const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    labels.push(label);
-    map.set(label, 0);
+    buckets.push({ dayKey, label });
+    map.set(dayKey, 0);
   }
 
   bookings.forEach((booking) => {
-    const date = toDate(booking.bookingDate);
+    const date = parseBookingDay(booking.bookingDate);
     if (!date || date < start) return;
-    const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    if (!map.has(label)) return;
-    map.set(label, map.get(label) + 1);
+    const dayKey = toDayKey(date);
+    if (!map.has(dayKey)) return;
+    map.set(dayKey, map.get(dayKey) + 1);
   });
 
-  return labels.map((label) => ({ label, value: map.get(label) || 0 }));
+  return buckets.map(({ dayKey, label }) => ({ dayKey, label, value: map.get(dayKey) || 0 }));
 };
 
 const buildTrendPoints = (data, width, height, padding) => {
@@ -114,7 +138,7 @@ export default function Dashboard() {
   cutoff.setDate(cutoff.getDate() - (selectedWindow.days - 1));
 
   const windowBookings = bookings.filter((booking) => {
-    const date = toDate(booking.bookingDate);
+    const date = parseBookingDay(booking.bookingDate);
     return date && date >= cutoff;
   });
 
