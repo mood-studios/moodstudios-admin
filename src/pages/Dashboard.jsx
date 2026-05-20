@@ -180,8 +180,8 @@ export default function Dashboard() {
   const donutBackground = buildDonutGradient(donutRows);
 
   const chartWidth = 700;
-  const chartHeight = 190;
-  const chartPadding = { top: 8, right: 6, bottom: 14, left: 24 };
+  const chartHeight = 260;
+  const chartPadding = { top: 16, right: 12, bottom: 28, left: 34 };
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
   const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
   const yAxisMax = Math.max(5, Math.ceil(trendMax / 5) * 5);
@@ -332,7 +332,7 @@ export default function Dashboard() {
                           key={`x-${point.dayKey}`}
                           className="line-chart__x-label"
                           x={point.x}
-                          y={chartHeight - 2}
+                          y={chartHeight - 8}
                           textAnchor="middle"
                         >
                           {point.label}

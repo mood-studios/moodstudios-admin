@@ -365,7 +365,7 @@ textarea {
 
 .analytics-card--line,
 .analytics-card--donut {
-  min-height: 240px;
+  min-height: 300px;
 }
 
 .analytics-card h3 {
@@ -375,7 +375,7 @@ textarea {
 
 .line-chart {
   width: 100%;
-  height: 190px;
+  height: 260px;
   display: block;
   border: 1px solid var(--border);
   border-radius: 8px;
