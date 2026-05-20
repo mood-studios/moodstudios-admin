@@ -81,23 +81,7 @@ const buildDailyTrend = (bookings, days) => {
   return buckets.map(({ dayKey, label }) => ({ dayKey, label, value: map.get(dayKey) || 0 }));
 };
 
-const buildSmoothPath = (points) => {
-  if (!points.length) return '';
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const current = points[i];
-    const next = points[i + 1];
-    const midX = (current.x + next.x) / 2;
-    const midY = (current.y + next.y) / 2;
-    d += ` Q ${current.x} ${current.y} ${midX} ${midY}`;
-  }
-  const penultimate = points[points.length - 2];
-  const last = points[points.length - 1];
-  d += ` Q ${penultimate.x} ${penultimate.y} ${last.x} ${last.y}`;
-  return d;
-};
+const buildLinePoints = (points) => points.map((point) => `${point.x},${point.y}`).join(' ');
 
 const buildDonutGradient = (rows) => {
   const total = rows.reduce((sum, row) => sum + row.value, 0);
@@ -117,6 +101,7 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [customerCount, setCustomerCount] = useState(0);
   const [windowKey, setWindowKey] = useState(WINDOW_OPTIONS[1].key);
+  const [hoveredPoint, setHoveredPoint] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -196,23 +181,40 @@ export default function Dashboard() {
 
   const chartWidth = 700;
   const chartHeight = 220;
-  const chartPadding = 20;
+  const chartPadding = { top: 16, right: 16, bottom: 28, left: 40 };
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
   const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
-  const chartPaddingPercent = (chartPadding / chartWidth) * 100;
-  const chartFloor = chartHeight - chartPadding / 2;
-  const trendChartPoints = trendData.map((point, index) => {
-    const x = chartPadding + (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
-    const y = chartPadding + (1 - point.value / trendMax) * (chartHeight - chartPadding * 2);
-    return { ...point, x, y };
+  const yAxisMax = Math.max(5, Math.ceil(trendMax / 5) * 5);
+  const yTickCount = 4;
+  const yTicks = Array.from({ length: yTickCount + 1 }, (_, index) => {
+    const value = Math.round((yAxisMax / yTickCount) * index);
+    const ratio = value / yAxisMax;
+    const y = chartPadding.top + (1 - ratio) * (chartHeight - chartPadding.top - chartPadding.bottom);
+    return { value, y };
   });
-  const trendLinePath = buildSmoothPath(trendChartPoints);
+  const chartPaddingLeftPercent = (chartPadding.left / chartWidth) * 100;
+  const chartPaddingRightPercent = (chartPadding.right / chartWidth) * 100;
+  const chartFloor = chartHeight - chartPadding.bottom;
+  const trendChartPoints = trendData.map((point, index) => {
+    const x =
+      chartPadding.left +
+      (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding.left - chartPadding.right);
+    const y =
+      chartPadding.top +
+      (1 - point.value / yAxisMax) * (chartHeight - chartPadding.top - chartPadding.bottom);
+    return { ...point, index, x, y, xPercent: (x / chartWidth) * 100, yPercent: (y / chartHeight) * 100 };
+  });
+  const trendLinePoints = buildLinePoints(trendChartPoints);
   const trendAreaPath =
-    trendChartPoints.length > 1
-      ? `${trendLinePath} L ${trendChartPoints[trendChartPoints.length - 1].x} ${chartFloor} L ${
-          trendChartPoints[0].x
-        } ${chartFloor} Z`
+    trendChartPoints.length > 0
+      ? `M ${trendChartPoints[0].x} ${chartFloor} L ${trendChartPoints
+          .map((point) => `${point.x} ${point.y}`)
+          .join(' L ')} L ${trendChartPoints[trendChartPoints.length - 1].x} ${chartFloor} Z`
       : '';
+  const currentHoveredPoint =
+    hoveredPoint != null
+      ? trendChartPoints.find((point) => point.dayKey === hoveredPoint) || null
+      : null;
 
   const kpiCards = [
     { label: 'Window bookings', value: windowBookings.length },
@@ -274,38 +276,80 @@ export default function Dashboard() {
             <div className="analytics-top">
               <article className="analytics-card analytics-card--line">
                 <h3>Customer bookings trend</h3>
-                <svg
-                  className="line-chart"
-                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                  role="img"
-                  aria-label="Bookings trend line"
-                >
-                  <defs>
-                    <linearGradient id="bookingsTrendFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a855f7" stopOpacity="0.34" />
-                      <stop offset="100%" stopColor="#a855f7" stopOpacity="0.04" />
-                    </linearGradient>
-                  </defs>
-                  {trendAreaPath ? <path className="line-chart__area" d={trendAreaPath} /> : null}
-                  {trendLinePath ? <path className="line-chart__line" d={trendLinePath} /> : null}
-                  {trendChartPoints.map((point) => (
-                    <circle key={point.dayKey} className="line-chart__dot" cx={point.x} cy={point.y} r="3.2">
-                      <title>{`${point.label}: ${point.value} bookings`}</title>
-                    </circle>
-                  ))}
-                </svg>
+                <div className="line-chart-wrap">
+                  <svg
+                    className="line-chart"
+                    viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                    role="img"
+                    aria-label="Bookings trend line"
+                  >
+                    <defs>
+                      <linearGradient id="bookingsTrendFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#a855f7" stopOpacity="0.22" />
+                        <stop offset="100%" stopColor="#a855f7" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+                    {yTicks.map((tick) => (
+                      <g key={`grid-${tick.value}`}>
+                        <line
+                          className="line-chart__grid"
+                          x1={chartPadding.left}
+                          y1={tick.y}
+                          x2={chartWidth - chartPadding.right}
+                          y2={tick.y}
+                        />
+                        <text
+                          className="line-chart__y-label"
+                          x={chartPadding.left - 8}
+                          y={tick.y}
+                          textAnchor="end"
+                          dominantBaseline="middle"
+                        >
+                          {tick.value}
+                        </text>
+                      </g>
+                    ))}
+                    {trendAreaPath ? <path className="line-chart__area" d={trendAreaPath} /> : null}
+                    {trendLinePoints ? <polyline className="line-chart__line" points={trendLinePoints} /> : null}
+                    {trendChartPoints.map((point) => (
+                      <circle
+                        key={point.dayKey}
+                        className="line-chart__dot"
+                        cx={point.x}
+                        cy={point.y}
+                        r="3.4"
+                        onMouseEnter={() => setHoveredPoint(point.dayKey)}
+                        onMouseLeave={() => setHoveredPoint(null)}
+                      >
+                        <title>{`${point.label}: ${point.value} bookings`}</title>
+                      </circle>
+                    ))}
+                  </svg>
+                  {currentHoveredPoint ? (
+                    <div
+                      className="line-chart__tooltip"
+                      style={{
+                        left: `${currentHoveredPoint.xPercent}%`,
+                        top: `${currentHoveredPoint.yPercent}%`,
+                      }}
+                    >
+                      <strong>{currentHoveredPoint.label}</strong>
+                      <span>{currentHoveredPoint.value} bookings</span>
+                    </div>
+                  ) : null}
+                </div>
                 <div
                   className="line-chart__labels"
                   style={{
-                    paddingLeft: `${chartPaddingPercent}%`,
-                    paddingRight: `${chartPaddingPercent}%`,
-                    gridTemplateColumns: `repeat(${Math.max(trendData.length, 1)}, minmax(0, 1fr))`,
+                    paddingLeft: `${chartPaddingLeftPercent}%`,
+                    paddingRight: `${chartPaddingRightPercent}%`,
+                    gridTemplateColumns: `repeat(${Math.max(trendChartPoints.length, 1)}, minmax(0, 1fr))`,
                   }}
                 >
-                  {trendData.map((point, index) => {
-                    const isFirst = index === 0;
-                    const isLast = index === trendData.length - 1;
-                    const show = isFirst || isLast || index % labelStep === 0;
+                  {trendChartPoints.map((point) => {
+                    const isFirst = point.index === 0;
+                    const isLast = point.index === trendChartPoints.length - 1;
+                    const show = isFirst || isLast || point.index % labelStep === 0;
                     return <span key={point.dayKey}>{show ? point.label : ''}</span>;
                   })}
                 </div>

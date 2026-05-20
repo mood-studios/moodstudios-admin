@@ -382,10 +382,24 @@ textarea {
   background: linear-gradient(180deg, #f8f5fe 0%, #fff 65%);
 }
 
+.line-chart-wrap {
+  position: relative;
+}
+
+.line-chart__grid {
+  stroke: rgba(139, 44, 245, 0.12);
+  stroke-width: 1;
+}
+
+.line-chart__y-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
 .line-chart__line {
   fill: none;
   stroke: #8b2cf5;
-  stroke-width: 3;
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -398,6 +412,7 @@ textarea {
   fill: #fff;
   stroke: #8b2cf5;
   stroke-width: 2;
+  cursor: pointer;
 }
 
 .line-chart__labels {
@@ -411,6 +426,30 @@ textarea {
 .line-chart__labels span {
   text-align: center;
   white-space: nowrap;
+}
+
+.line-chart__tooltip {
+  position: absolute;
+  transform: translate(-50%, -120%);
+  pointer-events: none;
+  background: #24143d;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.72rem;
+  display: grid;
+  gap: 0.15rem;
+  box-shadow: 0 10px 20px rgba(26, 10, 46, 0.22);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.line-chart__tooltip strong {
+  font-size: 0.72rem;
+}
+
+.line-chart__tooltip span {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .donut-wrap {
