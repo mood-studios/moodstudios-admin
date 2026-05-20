@@ -15,6 +15,7 @@ const emptyForm = {
   duration: '',
   category: '',
   image: '',
+  samplePhotos: [],
 };
 
 export default function Services() {
@@ -28,6 +29,8 @@ export default function Services() {
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [samplePhotos, setSamplePhotos] = useState([]);
+  const [uploadingSamples, setUploadingSamples] = useState(false);
   const [saving, setSaving] = useState(false);
   const { searchInput, setSearchInput, search } = useDebouncedSearch();
 
@@ -60,6 +63,7 @@ export default function Services() {
     setEditing(null);
     setForm({ ...emptyForm, category: categories[0]?._id || '' });
     resetImageState('');
+    setSamplePhotos([]);
     setModalOpen(true);
   };
 
@@ -74,6 +78,7 @@ export default function Services() {
       image: service.image || '',
     });
     resetImageState(service.image || '');
+    setSamplePhotos(service.samplePhotos || []);
     setModalOpen(true);
   };
 
@@ -82,6 +87,32 @@ export default function Services() {
     setModalOpen(false);
     setImageFile(null);
     setImagePreview('');
+    setSamplePhotos([]);
+  };
+
+  const handleSamplePhotosSelect = async (e) => {
+    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!files.length) return;
+
+    setUploadingSamples(true);
+    setError('');
+    try {
+      const urls = [];
+      for (const file of files) {
+        const uploadRes = await serviceApi.uploadImage(file);
+        urls.push(uploadRes.data.url);
+      }
+      setSamplePhotos((prev) => [...prev, ...urls]);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploadingSamples(false);
+    }
+  };
+
+  const removeSamplePhoto = (index) => {
+    setSamplePhotos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleFileSelect = (file) => {
@@ -117,6 +148,7 @@ export default function Services() {
         duration: Number(form.duration),
         category: form.category,
         image: imageUrl,
+        samplePhotos,
       };
 
       if (editing) {
@@ -311,6 +343,40 @@ export default function Services() {
               }}
               onRemove={handleRemoveImage}
             />
+            <fieldset className="sample-photos-field">
+              <legend>Photo samples (landing page)</legend>
+              <p className="muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
+                1–2 photos show side by side; 3 or more become a carousel on the site.
+              </p>
+              {samplePhotos.length > 0 && (
+                <div className="sample-photos-grid">
+                  {samplePhotos.map((url, index) => (
+                    <figure key={`${url}-${index}`} className="sample-photos-grid__item">
+                      <img src={url} alt="" />
+                      <button
+                        type="button"
+                        className="sample-photos-grid__remove"
+                        onClick={() => removeSamplePhoto(index)}
+                        aria-label="Remove photo"
+                      >
+                        ×
+                      </button>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              <label className="btn btn--ghost btn--sm sample-photos-add">
+                {uploadingSamples ? 'Uploading…' : 'Add sample photos'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  hidden
+                  disabled={uploadingSamples || saving}
+                  onChange={handleSamplePhotosSelect}
+                />
+              </label>
+            </fieldset>
             <footer className="form-actions">
               <button type="button" className="btn btn--ghost" onClick={closeModal} disabled={saving}>
                 Cancel
