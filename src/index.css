@@ -162,7 +162,8 @@ textarea {
   flex: 1;
   margin-left: var(--sidebar-w);
   padding: 2rem 2.5rem;
-  max-width: 1200px;
+  width: calc(100vw - var(--sidebar-w));
+  max-width: none;
 }
 
 /* Page header */
