@@ -154,47 +154,6 @@ export default function Dashboard() {
             </article>
           </section>
 
-          <section className="panel">
-            <header className="panel__head">
-              <h2>Recent bookings</h2>
-              <Link to="/bookings" className="btn btn--ghost btn--sm">
-                View all
-              </Link>
-            </header>
-            {recent.length === 0 ? (
-              <p className="muted panel__empty">No bookings yet.</p>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Customer</th>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((b) => (
-                    <tr key={b._id}>
-                      <td>{b.userId?.name || '—'}</td>
-                      <td>
-                        {formatDate(b.bookingDate)} · {b.bookingTime}
-                      </td>
-                      <td>{formatCurrency(b.totalAmount)}</td>
-                      <td>
-                        <span className={statusClass(b.bookingStatus)}>{b.bookingStatus}</span>
-                      </td>
-                      <td>
-                        <span className={statusClass(b.paymentStatus)}>{b.paymentStatus}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </section>
-
           <section className="panel analytics-panel">
             <header className="panel__head analytics-panel__head">
               <h2>Analytics</h2>
@@ -285,6 +244,47 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="panel">
+            <header className="panel__head">
+              <h2>Recent bookings</h2>
+              <Link to="/bookings" className="btn btn--ghost btn--sm">
+                View all
+              </Link>
+            </header>
+            {recent.length === 0 ? (
+              <p className="muted panel__empty">No bookings yet.</p>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map((b) => (
+                    <tr key={b._id}>
+                      <td>{b.userId?.name || '—'}</td>
+                      <td>
+                        {formatDate(b.bookingDate)} · {b.bookingTime}
+                      </td>
+                      <td>{formatCurrency(b.totalAmount)}</td>
+                      <td>
+                        <span className={statusClass(b.bookingStatus)}>{b.bookingStatus}</span>
+                      </td>
+                      <td>
+                        <span className={statusClass(b.paymentStatus)}>{b.paymentStatus}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </section>
         </>
       )}
