@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import moodLogo from '../../../landing/public/img/mood_logo.png';
 
 export default function Login() {
   const { user, login, verifyOtp } = useAuth();
@@ -46,7 +47,9 @@ export default function Login() {
     <section className="login-page">
       <article className="login-card">
         <header className="login-card__brand">
-          <span className="login-card__logo">M</span>
+          <span className="login-card__logo">
+            <img src={moodLogo} alt="Mood Studios logo" />
+          </span>
           <h1>Mood Studios</h1>
           <p>Admin dashboard</p>
         </header>

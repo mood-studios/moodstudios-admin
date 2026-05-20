@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import moodLogo from '../../../landing/public/img/mood_logo.png';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◫' },
@@ -25,7 +26,9 @@ export default function Layout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar__brand">
-          <span className="sidebar__logo">M</span>
+          <span className="sidebar__logo">
+            <img src={moodLogo} alt="Mood Studios logo" />
+          </span>
           <div>
             <strong>Mood Studios</strong>
             <span>Admin</span>
