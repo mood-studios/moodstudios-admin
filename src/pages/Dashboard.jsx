@@ -196,18 +196,7 @@ export default function Dashboard() {
   const trendPoints = buildTrendPoints(trendData, chartWidth, chartHeight, chartPadding);
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
   const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
-  const trendTicks = trendData
-    .map((point, index) => ({ ...point, index }))
-    .filter(({ index }) => {
-      const isFirst = index === 0;
-      const isLast = index === trendData.length - 1;
-      return isFirst || isLast || index % labelStep === 0;
-    });
-  const getChartXPercent = (index) => {
-    const plottedX =
-      chartPadding + (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
-    return (plottedX / chartWidth) * 100;
-  };
+  const chartPaddingPercent = (chartPadding / chartWidth) * 100;
 
   const kpiCards = [
     { label: 'Window bookings', value: windowBookings.length },
@@ -294,15 +283,20 @@ export default function Dashboard() {
                     );
                   })}
                 </svg>
-                <div className="line-chart__labels">
-                  {trendTicks.map((point) => (
-                    <span
-                      key={point.dayKey}
-                      style={{ left: `${getChartXPercent(point.index)}%` }}
-                    >
-                      {point.label}
-                    </span>
-                  ))}
+                <div
+                  className="line-chart__labels"
+                  style={{
+                    paddingLeft: `${chartPaddingPercent}%`,
+                    paddingRight: `${chartPaddingPercent}%`,
+                    gridTemplateColumns: `repeat(${Math.max(trendData.length, 1)}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {trendData.map((point, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === trendData.length - 1;
+                    const show = isFirst || isLast || index % labelStep === 0;
+                    return <span key={point.dayKey}>{show ? point.label : ''}</span>;
+                  })}
                 </div>
               </article>
 

@@ -398,24 +398,15 @@ textarea {
 
 .line-chart__labels {
   margin-top: 0.5rem;
-  position: relative;
-  height: 1rem;
+  display: grid;
   font-size: 0.75rem;
   color: var(--muted);
+  gap: 0.2rem;
 }
 
 .line-chart__labels span {
-  position: absolute;
-  transform: translateX(-50%);
+  text-align: center;
   white-space: nowrap;
-}
-
-.line-chart__labels span:first-child {
-  transform: translateX(0);
-}
-
-.line-chart__labels span:last-child {
-  transform: translateX(-100%);
 }
 
 .donut-wrap {
