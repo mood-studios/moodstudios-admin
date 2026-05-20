@@ -192,8 +192,6 @@ export default function Dashboard() {
     const y = chartPadding.top + (1 - ratio) * (chartHeight - chartPadding.top - chartPadding.bottom);
     return { value, y };
   });
-  const chartPaddingLeftPercent = (chartPadding.left / chartWidth) * 100;
-  const chartPaddingRightPercent = (chartPadding.right / chartWidth) * 100;
   const chartFloor = chartHeight - chartPadding.bottom;
   const trendChartPoints = trendData.map((point, index) => {
     const x =
@@ -324,6 +322,23 @@ export default function Dashboard() {
                         <title>{`${point.label}: ${point.value} bookings`}</title>
                       </circle>
                     ))}
+                    {trendChartPoints.map((point) => {
+                      const isFirst = point.index === 0;
+                      const isLast = point.index === trendChartPoints.length - 1;
+                      const show = isFirst || isLast || point.index % labelStep === 0;
+                      if (!show) return null;
+                      return (
+                        <text
+                          key={`x-${point.dayKey}`}
+                          className="line-chart__x-label"
+                          x={point.x}
+                          y={chartHeight - 8}
+                          textAnchor="middle"
+                        >
+                          {point.label}
+                        </text>
+                      );
+                    })}
                   </svg>
                   {currentHoveredPoint ? (
                     <div
@@ -337,21 +352,6 @@ export default function Dashboard() {
                       <span>{currentHoveredPoint.value} bookings</span>
                     </div>
                   ) : null}
-                </div>
-                <div
-                  className="line-chart__labels"
-                  style={{
-                    paddingLeft: `${chartPaddingLeftPercent}%`,
-                    paddingRight: `${chartPaddingRightPercent}%`,
-                    gridTemplateColumns: `repeat(${Math.max(trendChartPoints.length, 1)}, minmax(0, 1fr))`,
-                  }}
-                >
-                  {trendChartPoints.map((point) => {
-                    const isFirst = point.index === 0;
-                    const isLast = point.index === trendChartPoints.length - 1;
-                    const show = isFirst || isLast || point.index % labelStep === 0;
-                    return <span key={point.dayKey}>{show ? point.label : ''}</span>;
-                  })}
                 </div>
               </article>
 

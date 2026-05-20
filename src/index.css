@@ -396,6 +396,11 @@ textarea {
   font-size: 10px;
 }
 
+.line-chart__x-label {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
 .line-chart__line {
   fill: none;
   stroke: #8b2cf5;
@@ -413,19 +418,6 @@ textarea {
   stroke: #8b2cf5;
   stroke-width: 2;
   cursor: pointer;
-}
-
-.line-chart__labels {
-  margin-top: 0.5rem;
-  display: grid;
-  font-size: 0.75rem;
-  color: var(--muted);
-  gap: 0.2rem;
-}
-
-.line-chart__labels span {
-  text-align: center;
-  white-space: nowrap;
 }
 
 .line-chart__tooltip {
