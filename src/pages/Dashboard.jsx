@@ -195,6 +195,7 @@ export default function Dashboard() {
   const chartPadding = 20;
   const trendPoints = buildTrendPoints(trendData, chartWidth, chartHeight, chartPadding);
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
+  const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
 
   const kpiCards = [
     { label: 'Window bookings', value: windowBookings.length },
@@ -282,9 +283,12 @@ export default function Dashboard() {
                   })}
                 </svg>
                 <div className="line-chart__labels">
-                  <span>{trendData[0]?.label || ''}</span>
-                  <span>{trendData[Math.floor(trendData.length / 2)]?.label || ''}</span>
-                  <span>{trendData[trendData.length - 1]?.label || ''}</span>
+                  {trendData.map((point, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === trendData.length - 1;
+                    const show = isFirst || isLast || index % labelStep === 0;
+                    return <span key={point.dayKey}>{show ? point.label : ''}</span>;
+                  })}
                 </div>
               </article>
 

@@ -398,10 +398,16 @@ textarea {
 
 .line-chart__labels {
   margin-top: 0.5rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   font-size: 0.75rem;
   color: var(--muted);
+  gap: 0.2rem;
+}
+
+.line-chart__labels span {
+  text-align: center;
+  white-space: nowrap;
 }
 
 .donut-wrap {
