@@ -77,8 +77,14 @@ export default function Services() {
       category: service.category?._id || service.category,
       image: service.image || '',
     });
-    resetImageState(service.image || '');
-    setSamplePhotos(service.samplePhotos || []);
+    const existingPhotos =
+      Array.isArray(service.samplePhotos) && service.samplePhotos.length > 0
+        ? service.samplePhotos
+        : service.image
+          ? [service.image]
+          : [];
+    resetImageState(existingPhotos[0] || '');
+    setSamplePhotos(existingPhotos);
     setModalOpen(true);
   };
 
@@ -90,20 +96,25 @@ export default function Services() {
     setSamplePhotos([]);
   };
 
-  const handleSamplePhotosSelect = async (e) => {
-    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
-    e.target.value = '';
+  const uploadSampleFiles = async (files) => {
     if (!files.length) return;
-
     setUploadingSamples(true);
     setError('');
     try {
-      const urls = [];
-      for (const file of files) {
-        const uploadRes = await serviceApi.uploadImage(file);
-        urls.push(uploadRes.data.url);
-      }
-      setSamplePhotos((prev) => [...prev, ...urls]);
+      const uploadRes =
+        files.length === 1
+          ? await serviceApi.uploadImage(files[0])
+          : await serviceApi.uploadImages(files);
+      const urls =
+        uploadRes.data.urls || (uploadRes.data.url ? [uploadRes.data.url] : []);
+      setSamplePhotos((prev) => {
+        const merged = [...prev];
+        urls.forEach((url) => {
+          if (url && !merged.includes(url)) merged.push(url);
+        });
+        return merged;
+      });
+      if (urls[0]) resetImageState(urls[0]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -111,15 +122,26 @@ export default function Services() {
     }
   };
 
-  const removeSamplePhoto = (index) => {
-    setSamplePhotos((prev) => prev.filter((_, i) => i !== index));
+  const handleSamplePhotosSelect = async (e) => {
+    const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
+    e.target.value = '';
+    await uploadSampleFiles(files);
   };
 
-  const handleFileSelect = (file) => {
+  const removeSamplePhoto = (index) => {
+    setSamplePhotos((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      const cover = next[0] || '';
+      resetImageState(cover);
+      return next;
+    });
+  };
+
+  const handleFileSelect = async (file) => {
     if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-    setForm((f) => ({ ...f, image: '' }));
+    setImageFile(null);
+    setImagePreview('');
+    await uploadSampleFiles([file]);
   };
 
   const handleRemoveImage = () => {
@@ -132,14 +154,20 @@ export default function Services() {
     setSaving(true);
 
     try {
-      let imageUrl = form.image || undefined;
+      let photos = [...samplePhotos];
 
       if (imageFile) {
         const uploadRes = await serviceApi.uploadImage(imageFile);
-        imageUrl = uploadRes.data.url;
-      } else if (!imagePreview && !form.image) {
-        imageUrl = '';
+        const url = uploadRes.data.url;
+        if (url && !photos.includes(url)) photos.push(url);
       }
+
+      const imageUrl = (form.image || '').trim();
+      if (imageUrl && !photos.includes(imageUrl)) {
+        photos.unshift(imageUrl);
+      }
+
+      photos = [...new Set(photos.filter(Boolean))];
 
       const body = {
         name: form.name,
@@ -147,8 +175,8 @@ export default function Services() {
         price: Number(form.price),
         duration: Number(form.duration),
         category: form.category,
-        image: imageUrl,
-        samplePhotos,
+        image: photos[0] || '',
+        samplePhotos: photos,
       };
 
       if (editing) {
@@ -332,21 +360,34 @@ export default function Services() {
               </label>
             </div>
             <ImageUpload
+              label="Cover image (first photo)"
               value={form.image}
-              previewUrl={imagePreview}
+              previewUrl={imagePreview || samplePhotos[0] || ''}
               onFileSelect={handleFileSelect}
               onUrlChange={(url) => {
                 if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
                 setImageFile(null);
                 setImagePreview(url);
                 setForm((f) => ({ ...f, image: url }));
+                if (url) {
+                  setSamplePhotos((prev) => {
+                    const rest = prev.filter((u) => u !== url);
+                    return [url, ...rest];
+                  });
+                }
               }}
-              onRemove={handleRemoveImage}
+              onRemove={() => {
+                setSamplePhotos((prev) => {
+                  const next = prev.slice(1);
+                  resetImageState(next[0] || '');
+                  return next;
+                });
+              }}
             />
             <fieldset className="sample-photos-field">
-              <legend>Photo samples (landing page)</legend>
+              <legend>All photo samples</legend>
               <p className="muted" style={{ margin: '0 0 0.75rem', fontSize: '0.85rem' }}>
-                1–2 photos show side by side; 3 or more become a carousel on the site.
+                Upload multiple images — all are saved. 1–2 show side by side on the site; 3+ use a carousel.
               </p>
               {samplePhotos.length > 0 && (
                 <div className="sample-photos-grid">

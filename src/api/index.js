@@ -94,6 +94,20 @@ export const serviceApi = {
     if (!res.ok) throw new Error(data.message || 'Image upload failed');
     return data;
   },
+  uploadImages: async (files) => {
+    const form = new FormData();
+    files.forEach((file) => form.append('images', file));
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
+    const res = await fetch(`${API_BASE}/services/upload-images`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Image upload failed');
+    return data;
+  },
 };
 
 export const galleryApi = {
