@@ -384,15 +384,19 @@ textarea {
 
 .line-chart__line {
   fill: none;
-  stroke: var(--purple);
+  stroke: #8b2cf5;
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+.line-chart__area {
+  fill: url(#bookingsTrendFill);
+}
+
 .line-chart__dot {
   fill: #fff;
-  stroke: var(--purple);
+  stroke: #8b2cf5;
   stroke-width: 2;
 }
 

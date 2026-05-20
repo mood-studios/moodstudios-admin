@@ -81,18 +81,22 @@ const buildDailyTrend = (bookings, days) => {
   return buckets.map(({ dayKey, label }) => ({ dayKey, label, value: map.get(dayKey) || 0 }));
 };
 
-const buildTrendPoints = (data, width, height, padding) => {
-  if (!data.length) return '';
-  const max = Math.max(...data.map((item) => item.value), 1);
-  const innerW = width - padding * 2;
-  const innerH = height - padding * 2;
-  return data
-    .map((item, index) => {
-      const x = padding + (index / Math.max(data.length - 1, 1)) * innerW;
-      const y = padding + (1 - item.value / max) * innerH;
-      return `${x},${y}`;
-    })
-    .join(' ');
+const buildSmoothPath = (points) => {
+  if (!points.length) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const current = points[i];
+    const next = points[i + 1];
+    const midX = (current.x + next.x) / 2;
+    const midY = (current.y + next.y) / 2;
+    d += ` Q ${current.x} ${current.y} ${midX} ${midY}`;
+  }
+  const penultimate = points[points.length - 2];
+  const last = points[points.length - 1];
+  d += ` Q ${penultimate.x} ${penultimate.y} ${last.x} ${last.y}`;
+  return d;
 };
 
 const buildDonutGradient = (rows) => {
@@ -193,10 +197,22 @@ export default function Dashboard() {
   const chartWidth = 700;
   const chartHeight = 220;
   const chartPadding = 20;
-  const trendPoints = buildTrendPoints(trendData, chartWidth, chartHeight, chartPadding);
   const trendMax = Math.max(...trendData.map((item) => item.value), 1);
   const labelStep = Math.max(1, Math.ceil(trendData.length / 8));
   const chartPaddingPercent = (chartPadding / chartWidth) * 100;
+  const chartFloor = chartHeight - chartPadding / 2;
+  const trendChartPoints = trendData.map((point, index) => {
+    const x = chartPadding + (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
+    const y = chartPadding + (1 - point.value / trendMax) * (chartHeight - chartPadding * 2);
+    return { ...point, x, y };
+  });
+  const trendLinePath = buildSmoothPath(trendChartPoints);
+  const trendAreaPath =
+    trendChartPoints.length > 1
+      ? `${trendLinePath} L ${trendChartPoints[trendChartPoints.length - 1].x} ${chartFloor} L ${
+          trendChartPoints[0].x
+        } ${chartFloor} Z`
+      : '';
 
   const kpiCards = [
     { label: 'Window bookings', value: windowBookings.length },
@@ -264,24 +280,19 @@ export default function Dashboard() {
                   role="img"
                   aria-label="Bookings trend line"
                 >
-                  <polyline className="line-chart__line" points={trendPoints} />
-                  {trendData.map((point, index) => {
-                    const x =
-                      chartPadding +
-                      (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
-                    const y = chartPadding + (1 - point.value / trendMax) * (chartHeight - chartPadding * 2);
-                    return (
-                      <circle
-                        key={`${point.label}-${index}`}
-                        className="line-chart__dot"
-                        cx={x}
-                        cy={y}
-                        r="3.2"
-                      >
-                        <title>{`${point.label}: ${point.value} bookings`}</title>
-                      </circle>
-                    );
-                  })}
+                  <defs>
+                    <linearGradient id="bookingsTrendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#a855f7" stopOpacity="0.34" />
+                      <stop offset="100%" stopColor="#a855f7" stopOpacity="0.04" />
+                    </linearGradient>
+                  </defs>
+                  {trendAreaPath ? <path className="line-chart__area" d={trendAreaPath} /> : null}
+                  {trendLinePath ? <path className="line-chart__line" d={trendLinePath} /> : null}
+                  {trendChartPoints.map((point) => (
+                    <circle key={point.dayKey} className="line-chart__dot" cx={point.x} cy={point.y} r="3.2">
+                      <title>{`${point.label}: ${point.value} bookings`}</title>
+                    </circle>
+                  ))}
                 </svg>
                 <div
                   className="line-chart__labels"
