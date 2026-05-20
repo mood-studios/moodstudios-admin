@@ -77,6 +77,8 @@ export const featuredPhotoApi = {
       method: 'PUT',
       body: JSON.stringify({ photos }),
     }),
+  toggleVisibility: (id) =>
+    apiFetch(`/featured-photos/${id}/visibility`, { method: 'PATCH' }),
 };
 
 export const serviceApi = {

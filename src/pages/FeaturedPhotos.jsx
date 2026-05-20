@@ -4,6 +4,14 @@ import { featuredPhotoApi, serviceApi } from '../api';
 
 const MAX_PHOTOS = 12;
 
+function mapPhoto(doc) {
+  return {
+    _id: doc._id,
+    url: doc.url,
+    isVisible: doc.isVisible !== false,
+  };
+}
+
 export default function FeaturedPhotos() {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,11 +20,13 @@ export default function FeaturedPhotos() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
 
+  const heroIndex = photos.findIndex((p) => p.isVisible);
+
   const load = useCallback(() => {
     setLoading(true);
     featuredPhotoApi
       .list()
-      .then((res) => setPhotos((res.data || []).map((p) => p.url)))
+      .then((res) => setPhotos((res.data || []).map(mapPhoto)))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
@@ -51,7 +61,9 @@ export default function FeaturedPhotos() {
       setPhotos((prev) => {
         const merged = [...prev];
         urls.forEach((url) => {
-          if (url && !merged.includes(url)) merged.push(url);
+          if (url && !merged.some((p) => p.url === url)) {
+            merged.push({ url, isVisible: true });
+          }
         });
         return merged.slice(0, MAX_PHOTOS);
       });
@@ -78,12 +90,37 @@ export default function FeaturedPhotos() {
     setSaved(false);
   };
 
+  const toggleVisible = async (index) => {
+    const photo = photos[index];
+    if (!photo) return;
+
+    setSaved(false);
+    setError('');
+
+    if (photo._id) {
+      try {
+        const res = await featuredPhotoApi.toggleVisibility(photo._id);
+        const updated = mapPhoto(res.data);
+        setPhotos((prev) => prev.map((p, i) => (i === index ? updated : p)));
+      } catch (err) {
+        setError(err.message);
+      }
+      return;
+    }
+
+    setPhotos((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, isVisible: !p.isVisible } : p))
+    );
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
     setSaved(false);
     try {
-      await featuredPhotoApi.save(photos);
+      await featuredPhotoApi.save(
+        photos.map((p) => ({ url: p.url, isVisible: p.isVisible }))
+      );
       setSaved(true);
       load();
     } catch (err) {
@@ -97,7 +134,7 @@ export default function FeaturedPhotos() {
     <>
       <PageHeader
         title="Featured photos"
-        subtitle="Photos shown on the landing page hero gallery (first photo is the main hero image)"
+        subtitle="Photos shown on the landing page hero gallery (first visible photo is the main hero image)"
         actions={
           <button
             type="button"
@@ -117,8 +154,8 @@ export default function FeaturedPhotos() {
 
       <section className="panel">
         <p className="muted" style={{ margin: '0 0 1rem', fontSize: '0.9rem' }}>
-          Upload up to {MAX_PHOTOS} images. Drag order with the arrows — the first photo appears in the hero card and
-          leads the gallery strip.
+          Upload up to {MAX_PHOTOS} images. Use the visibility switch to hide photos without deleting them. Reorder with
+          the arrows — the first <strong>visible</strong> photo is the hero.
         </p>
 
         {loading ? (
@@ -127,10 +164,24 @@ export default function FeaturedPhotos() {
           <>
             {photos.length > 0 && (
               <div className="sample-photos-grid featured-photos-admin">
-                {photos.map((url, index) => (
-                  <figure key={`${url}-${index}`} className="sample-photos-grid__item">
-                    {index === 0 && <span className="featured-photos-admin__badge">Hero</span>}
-                    <img src={url} alt="" />
+                {photos.map((photo, index) => (
+                  <figure
+                    key={photo._id || `${photo.url}-${index}`}
+                    className={`sample-photos-grid__item${photo.isVisible ? '' : ' featured-photos-admin__item--hidden'}`}
+                  >
+                    {heroIndex === index && <span className="featured-photos-admin__badge">Hero</span>}
+                    <img src={photo.url} alt="" />
+                    <label className="visibility-switch" title={photo.isVisible ? 'Visible on site' : 'Hidden from site'}>
+                      <input
+                        type="checkbox"
+                        checked={photo.isVisible}
+                        onChange={() => toggleVisible(index)}
+                      />
+                      <span className="visibility-switch__track" aria-hidden="true" />
+                      <span className="visibility-switch__label">
+                        {photo.isVisible ? 'Visible' : 'Hidden'}
+                      </span>
+                    </label>
                     <div className="featured-photos-admin__actions">
                       <button
                         type="button"
