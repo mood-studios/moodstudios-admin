@@ -203,6 +203,11 @@ export default function Dashboard() {
       const isLast = index === trendData.length - 1;
       return isFirst || isLast || index % labelStep === 0;
     });
+  const getChartXPercent = (index) => {
+    const plottedX =
+      chartPadding + (index / Math.max(trendData.length - 1, 1)) * (chartWidth - chartPadding * 2);
+    return (plottedX / chartWidth) * 100;
+  };
 
   const kpiCards = [
     { label: 'Window bookings', value: windowBookings.length },
@@ -293,7 +298,7 @@ export default function Dashboard() {
                   {trendTicks.map((point) => (
                     <span
                       key={point.dayKey}
-                      style={{ left: `${(point.index / Math.max(trendData.length - 1, 1)) * 100}%` }}
+                      style={{ left: `${getChartXPercent(point.index)}%` }}
                     >
                       {point.label}
                     </span>
