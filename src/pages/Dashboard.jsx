@@ -231,7 +231,7 @@ export default function Dashboard() {
 
             <div className="analytics-top">
               <article className="analytics-card analytics-card--line">
-                <h3>Sessions trend</h3>
+                <h3>Customer bookings trend</h3>
                 <svg
                   className="line-chart"
                   viewBox={`0 0 ${chartWidth} ${chartHeight}`}
@@ -265,12 +265,12 @@ export default function Dashboard() {
               </article>
 
               <article className="analytics-card analytics-card--donut">
-                <h3>Sessions</h3>
+                <h3>Customer bookings</h3>
                 <div className="donut-wrap">
                   <div className="donut-chart" style={{ background: donutBackground }}>
                     <div className="donut-chart__center">
                       <strong>{donutTotal}</strong>
-                      <span>Sessions</span>
+                      <span>Bookings</span>
                     </div>
                   </div>
                   <ul className="analytics-list analytics-list--legend">
