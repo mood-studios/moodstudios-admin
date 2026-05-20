@@ -163,54 +163,63 @@ export default function FeaturedPhotos() {
         ) : (
           <>
             {photos.length > 0 && (
-              <div className="sample-photos-grid featured-photos-admin">
+              <div className="featured-photos-grid">
                 {photos.map((photo, index) => (
-                  <figure
+                  <article
                     key={photo._id || `${photo.url}-${index}`}
-                    className={`sample-photos-grid__item${photo.isVisible ? '' : ' featured-photos-admin__item--hidden'}`}
+                    className={`featured-photo-card${photo.isVisible ? '' : ' featured-photo-card--hidden'}`}
                   >
-                    {heroIndex === index && <span className="featured-photos-admin__badge">Hero</span>}
-                    <img src={photo.url} alt="" />
-                    <label className="visibility-switch" title={photo.isVisible ? 'Visible on site' : 'Hidden from site'}>
-                      <input
-                        type="checkbox"
-                        checked={photo.isVisible}
-                        onChange={() => toggleVisible(index)}
-                      />
-                      <span className="visibility-switch__track" aria-hidden="true" />
-                      <span className="visibility-switch__label">
-                        {photo.isVisible ? 'Visible' : 'Hidden'}
-                      </span>
-                    </label>
-                    <div className="featured-photos-admin__actions">
-                      <button
-                        type="button"
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => movePhoto(index, -1)}
-                        disabled={index === 0}
-                        aria-label="Move earlier"
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--ghost btn--sm"
-                        onClick={() => movePhoto(index, 1)}
-                        disabled={index === photos.length - 1}
-                        aria-label="Move later"
-                      >
-                        →
-                      </button>
-                      <button
-                        type="button"
-                        className="sample-photos-grid__remove"
-                        onClick={() => removePhoto(index)}
-                        aria-label="Remove photo"
-                      >
-                        ×
-                      </button>
+                    <div className="featured-photo-card__media">
+                      {heroIndex === index && (
+                        <span className="featured-photo-card__badge">Hero</span>
+                      )}
+                      <img src={photo.url} alt="" />
                     </div>
-                  </figure>
+                    <div className="featured-photo-card__options">
+                      <label
+                        className="visibility-switch"
+                        title={photo.isVisible ? 'Visible on site' : 'Hidden from site'}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={photo.isVisible}
+                          onChange={() => toggleVisible(index)}
+                        />
+                        <span className="visibility-switch__track" aria-hidden="true" />
+                        <span className="visibility-switch__label">
+                          {photo.isVisible ? 'Visible' : 'Hidden'}
+                        </span>
+                      </label>
+                      <div className="featured-photo-card__controls">
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => movePhoto(index, -1)}
+                          disabled={index === 0}
+                          aria-label="Move earlier"
+                        >
+                          ←
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm"
+                          onClick={() => movePhoto(index, 1)}
+                          disabled={index === photos.length - 1}
+                          aria-label="Move later"
+                        >
+                          →
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--sm featured-photo-card__remove"
+                          onClick={() => removePhoto(index)}
+                          aria-label="Remove photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  </article>
                 ))}
               </div>
             )}
