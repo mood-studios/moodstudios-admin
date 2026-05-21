@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import SearchField from '../components/SearchField';
 import ImageUpload from '../components/ImageUpload';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
-import { useDialog } from '../context/DialogContext';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { categoryApi, serviceApi } from '../api';
 import { formatCurrency } from '../utils/format';
 
@@ -19,7 +19,8 @@ const emptyForm = {
 };
 
 export default function Services() {
-  const { confirm } = useDialog();
+  const { confirmDelete, confirmRemove, confirmSave, confirmUpdate, confirmUpload } =
+    useAdminConfirm();
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,10 +126,20 @@ export default function Services() {
   const handleSamplePhotosSelect = async (e) => {
     const files = [...(e.target.files || [])].filter((f) => f.type.startsWith('image/'));
     e.target.value = '';
+    if (!files.length) return;
+
+    const ok = await confirmUpload(
+      `Upload ${files.length} sample photo${files.length === 1 ? '' : 's'} to this package?`,
+      'Upload sample photos'
+    );
+    if (!ok) return;
+
     await uploadSampleFiles(files);
   };
 
-  const removeSamplePhoto = (index) => {
+  const removeSamplePhoto = async (index) => {
+    const ok = await confirmRemove('Remove this sample photo from the package?');
+    if (!ok) return;
     setSamplePhotos((prev) => {
       const next = prev.filter((_, i) => i !== index);
       const cover = next[0] || '';
@@ -138,18 +149,32 @@ export default function Services() {
   };
 
   const handleFileSelect = async (file) => {
+    const ok = await confirmUpload('Upload this image as a sample photo for the package?', 'Upload image');
+    if (!ok) return;
+
     if (imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
     setImageFile(null);
     setImagePreview('');
     await uploadSampleFiles([file]);
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    const ok = await confirmRemove('Remove the cover image for this package?');
+    if (!ok) return;
     resetImageState('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const ok = await confirmSave(
+      editing
+        ? `Save changes to "${form.name}"?`
+        : `Create package "${form.name}"?`,
+      editing ? 'Update service' : 'Create service'
+    );
+    if (!ok) return;
+
     setError('');
     setSaving(true);
 
@@ -194,6 +219,15 @@ export default function Services() {
   };
 
   const toggleVisibility = async (id) => {
+    const service = services.find((s) => s._id === id);
+    const nextVisible = service ? !service.isVisible : true;
+    const ok = await confirmUpdate(
+      nextVisible
+        ? `Show "${service?.name}" on the booking site?`
+        : `Hide "${service?.name}" from the booking site?`,
+      nextVisible ? 'Show package' : 'Hide package'
+    );
+    if (!ok) return;
     try {
       await serviceApi.toggleVisibility(id);
       load();
@@ -203,12 +237,7 @@ export default function Services() {
   };
 
   const handleDelete = async (id) => {
-    const ok = await confirm({
-      title: 'Delete service',
-      message: 'Delete this service? This cannot be undone.',
-      confirmLabel: 'Delete',
-      danger: true,
-    });
+    const ok = await confirmDelete('Delete this service? This cannot be undone.', 'Delete service');
     if (!ok) return;
     try {
       await serviceApi.delete(id);

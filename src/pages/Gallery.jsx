@@ -4,10 +4,10 @@ import Modal from '../components/Modal';
 import CloseIcon from '../components/CloseIcon';
 import { bookingApi, galleryApi } from '../api';
 import { formatDate } from '../utils/format';
-import { useDialog } from '../context/DialogContext';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 
 export default function Gallery() {
-  const { confirm } = useDialog();
+  const { confirmDelete, confirmRemove, confirmSave, confirmUpload } = useAdminConfirm();
   const [bookings, setBookings] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState('');
   const [albums, setAlbums] = useState([]);
@@ -50,6 +50,10 @@ export default function Gallery() {
 
   const createAlbum = async (e) => {
     e.preventDefault();
+
+    const ok = await confirmSave(`Create album "${albumName}" for this booking?`, 'Create album');
+    if (!ok) return;
+
     try {
       await galleryApi.createAlbum(selectedBooking, albumName);
       setAlbumName('');
@@ -64,6 +68,14 @@ export default function Gallery() {
   const upload = async (e) => {
     e.preventDefault();
     if (!files.length) return;
+
+    const count = files.length;
+    const ok = await confirmSave(
+      `Upload ${count} photo${count === 1 ? '' : 's'} to this album?`,
+      'Upload photos'
+    );
+    if (!ok) return;
+
     try {
       await galleryApi.uploadPhotos(uploadAlbumId, Array.from(files));
       setFiles([]);
@@ -76,12 +88,10 @@ export default function Gallery() {
   };
 
   const deleteAlbum = async (albumId, albumName) => {
-    const ok = await confirm({
-      title: 'Delete album',
-      message: `Delete "${albumName}" and all its photos? This cannot be undone.`,
-      confirmLabel: 'Delete',
-      danger: true,
-    });
+    const ok = await confirmDelete(
+      `Delete "${albumName}" and all its photos? This cannot be undone.`,
+      'Delete album'
+    );
     if (!ok) return;
     try {
       await galleryApi.deleteAlbum(albumId);
@@ -101,12 +111,10 @@ export default function Gallery() {
   };
 
   const deletePhoto = async (albumId, photoId) => {
-    const ok = await confirm({
-      title: 'Remove photo',
-      message: 'Remove this photo?',
-      confirmLabel: 'Remove',
-      danger: true,
-    });
+    const ok = await confirmRemove(
+      'Remove this photo from the album? This cannot be undone.',
+      'Remove photo'
+    );
     if (!ok) return;
     try {
       await galleryApi.deletePhoto(albumId, photoId);
@@ -129,7 +137,10 @@ export default function Gallery() {
             type="button"
             className="btn btn--primary"
             disabled={!selectedBooking}
-            onClick={() => setShowCreate(true)}
+            onClick={async () => {
+              const ok = await confirmSave('Create a new photo album for this booking?', 'New album');
+              if (ok) setShowCreate(true);
+            }}
           >
             New album
           </button>
@@ -188,7 +199,13 @@ export default function Gallery() {
                     <button
                       type="button"
                       className="btn btn--ghost btn--sm"
-                      onClick={() => setUploadAlbumId(album._id)}
+                      onClick={async () => {
+                        const ok = await confirmUpload(
+                          `Upload photos to "${album.albumName}"?`,
+                          'Upload photos'
+                        );
+                        if (ok) setUploadAlbumId(album._id);
+                      }}
                     >
                       Upload photos
                     </button>

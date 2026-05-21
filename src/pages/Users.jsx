@@ -5,7 +5,7 @@ import PasswordField from '../components/PasswordField';
 import Modal from '../components/Modal';
 import SearchField from '../components/SearchField';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
-import { useDialog } from '../context/DialogContext';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { userApi } from '../api';
 import { formatDateTime } from '../utils/format';
 
@@ -23,7 +23,7 @@ const emptyCreateForm = () => ({
 });
 
 export default function Users() {
-  const { confirm } = useDialog();
+  const { confirmDelete, confirmSave } = useAdminConfirm();
   const [searchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -75,6 +75,13 @@ export default function Users() {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!editing) return;
+
+    const ok = await confirmSave(
+      `Save changes for ${editing.name} (${editing.email})?`,
+      'Update user'
+    );
+    if (!ok) return;
+
     setSaving(true);
     setError('');
     try {
@@ -94,6 +101,13 @@ export default function Users() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+
+    const ok = await confirmSave(
+      `Create customer account for ${createForm.name} (${createForm.email})?`,
+      'Create customer'
+    );
+    if (!ok) return;
+
     setSaving(true);
     setError('');
     try {
@@ -111,12 +125,10 @@ export default function Users() {
   };
 
   const handleDelete = async (user) => {
-    const ok = await confirm({
-      title: 'Delete user',
-      message: `Delete ${user.name} (${user.email})? This cannot be undone.`,
-      confirmLabel: 'Delete',
-      danger: true,
-    });
+    const ok = await confirmDelete(
+      `Delete ${user.name} (${user.email})? This cannot be undone.`,
+      'Delete user'
+    );
     if (!ok) return;
     setError('');
     try {

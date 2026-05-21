@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { featuredPhotoApi, serviceApi } from '../api';
 
 const MAX_PHOTOS = 12;
@@ -13,6 +14,7 @@ function mapPhoto(doc) {
 }
 
 export default function FeaturedPhotos() {
+  const { confirmDelete, confirmSave, confirmUpdate, confirmUpload } = useAdminConfirm();
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -74,14 +76,22 @@ export default function FeaturedPhotos() {
     }
   };
 
-  const removePhoto = (index) => {
+  const removePhoto = async (index) => {
+    const ok = await confirmDelete(
+      'Remove this photo from the featured list? Click Save to website to publish this change.',
+      'Remove photo'
+    );
+    if (!ok) return;
     setPhotos((prev) => prev.filter((_, i) => i !== index));
     setSaved(false);
   };
 
-  const movePhoto = (index, direction) => {
+  const movePhoto = async (index, direction) => {
     const next = index + direction;
     if (next < 0 || next >= photos.length) return;
+    const label = direction < 0 ? 'move this photo earlier' : 'move this photo later';
+    const ok = await confirmUpdate(`Reorder featured photos: ${label}?`);
+    if (!ok) return;
     setPhotos((prev) => {
       const copy = [...prev];
       [copy[index], copy[next]] = [copy[next], copy[index]];
@@ -93,6 +103,15 @@ export default function FeaturedPhotos() {
   const toggleVisible = async (index) => {
     const photo = photos[index];
     if (!photo) return;
+
+    const nextVisible = !photo.isVisible;
+    const ok = await confirmUpdate(
+      nextVisible
+        ? 'Show this photo on the landing page gallery?'
+        : 'Hide this photo from the landing page? (It stays in your list until you remove it.)',
+      nextVisible ? 'Show on website' : 'Hide from website'
+    );
+    if (!ok) return;
 
     setSaved(false);
     setError('');
@@ -114,6 +133,12 @@ export default function FeaturedPhotos() {
   };
 
   const handleSave = async () => {
+    const ok = await confirmSave(
+      `Publish ${photos.length} featured photo(s) to the landing page?`,
+      'Save to website'
+    );
+    if (!ok) return;
+
     setSaving(true);
     setError('');
     setSaved(false);
@@ -232,9 +257,28 @@ export default function FeaturedPhotos() {
                 multiple
                 hidden
                 disabled={uploading || saving || photos.length >= MAX_PHOTOS}
-                onChange={(e) => {
-                  uploadFiles(e.target.files || []);
+                onChange={async (e) => {
+                  const fileList = e.target.files;
                   e.target.value = '';
+                  if (!fileList?.length) return;
+
+                  const imageFiles = [...fileList].filter((f) => f.type.startsWith('image/'));
+                  if (!imageFiles.length) return;
+
+                  const remaining = MAX_PHOTOS - photos.length;
+                  if (remaining <= 0) {
+                    setError(`You can add up to ${MAX_PHOTOS} featured photos.`);
+                    return;
+                  }
+
+                  const count = Math.min(imageFiles.length, remaining);
+                  const ok = await confirmUpload(
+                    `Add ${count} photo${count === 1 ? '' : 's'} to the featured list? Click Save to website when you are done.`,
+                    'Add featured photos'
+                  );
+                  if (!ok) return;
+
+                  await uploadFiles(imageFiles);
                 }}
               />
             </label>

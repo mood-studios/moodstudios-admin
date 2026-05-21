@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { bookingApi } from '../api';
 import { formatDate } from '../utils/format';
 
@@ -17,6 +18,7 @@ function bookingDurationMinutes(services) {
 }
 
 export default function RescheduleModal({ booking, onClose, onSaved }) {
+  const { confirmSave } = useAdminConfirm();
   const [date, setDate] = useState(() => toDateInputValue(booking.bookingDate));
   const [selectedTime, setSelectedTime] = useState(booking.bookingTime || '');
   const [slots, setSlots] = useState([]);
@@ -49,6 +51,13 @@ export default function RescheduleModal({ booking, onClose, onSaved }) {
       setError('Please select an available time slot');
       return;
     }
+
+    const ok = await confirmSave(
+      `Reschedule ${booking.userId?.name || 'this booking'} to ${date} at ${selectedTime}?`,
+      'Reschedule booking'
+    );
+    if (!ok) return;
+
     setSaving(true);
     setError('');
     try {

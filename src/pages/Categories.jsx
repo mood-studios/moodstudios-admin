@@ -3,11 +3,11 @@ import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 import SearchField from '../components/SearchField';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
-import { useDialog } from '../context/DialogContext';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { categoryApi } from '../api';
 
 export default function Categories() {
-  const { confirm } = useDialog();
+  const { confirmDelete, confirmSave } = useAdminConfirm();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,6 +43,13 @@ export default function Categories() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const ok = await confirmSave(
+      editing ? `Save category name as "${name}"?` : `Create category "${name}"?`,
+      editing ? 'Update category' : 'Create category'
+    );
+    if (!ok) return;
+
     setError('');
     try {
       if (editing) {
@@ -58,12 +65,10 @@ export default function Categories() {
   };
 
   const handleDelete = async (id) => {
-    const ok = await confirm({
-      title: 'Delete category',
-      message: 'Delete this category? Services using it may break.',
-      confirmLabel: 'Delete',
-      danger: true,
-    });
+    const ok = await confirmDelete(
+      'Delete this category? Services using it may break.',
+      'Delete category'
+    );
     if (!ok) return;
     try {
       await categoryApi.delete(id);

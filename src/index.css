@@ -837,7 +837,7 @@ textarea {
 
 /* Confirm / alert dialogs */
 .confirm-dialog-backdrop {
-  z-index: 200;
+  z-index: 300;
 }
 
 .confirm-dialog {

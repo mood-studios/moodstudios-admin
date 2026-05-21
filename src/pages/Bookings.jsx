@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import RescheduleModal from '../components/RescheduleModal';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 import { bookingApi } from '../api';
 import { formatCurrency, formatDate, statusClass } from '../utils/format';
 
@@ -9,6 +10,7 @@ const PAYMENT_OPTIONS = ['', 'unpaid', 'pending', 'paid', 'failed', 'refunded'];
 const ADMIN_ACTIONS = ['confirmed', 'declined', 'completed'];
 
 export default function Bookings() {
+  const { confirmUpdate } = useAdminConfirm();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,6 +46,13 @@ export default function Bookings() {
   }, [load]);
 
   const updateStatus = async (id, status) => {
+    const booking = bookings.find((b) => b._id === id);
+    const ok = await confirmUpdate(
+      `Change booking for ${booking?.userId?.name || 'this customer'} to "${status}"?`,
+      'Update booking status'
+    );
+    if (!ok) return;
+
     setUpdatingId(id);
     try {
       await bookingApi.updateStatus(id, status);
@@ -169,7 +178,13 @@ export default function Bookings() {
                         type="button"
                         className="btn btn--ghost btn--sm"
                         disabled={updatingId === b._id}
-                        onClick={() => setRescheduleBooking(b)}
+                        onClick={async () => {
+                          const ok = await confirmUpdate(
+                            `Reschedule ${b.userId?.name || 'this booking'}? You will pick a new date and time.`,
+                            'Reschedule booking'
+                          );
+                          if (ok) setRescheduleBooking(b);
+                        }}
                       >
                         Resched
                       </button>

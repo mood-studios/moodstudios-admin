@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAdminInbox } from '../context/AdminInboxContext';
+import { useAdminConfirm } from '../hooks/useAdminConfirm';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◫' },
@@ -17,9 +18,12 @@ const nav = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const { conversationCount } = useAdminInbox();
+  const { confirmUpdate } = useAdminConfirm();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    const ok = await confirmUpdate('Sign out of the admin panel?', 'Log out');
+    if (!ok) return;
     await logout();
     navigate('/login');
   };
