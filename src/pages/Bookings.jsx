@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
-import SearchField from '../components/SearchField';
-import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
 import RescheduleModal from '../components/RescheduleModal';
 import { bookingApi } from '../api';
 import { formatCurrency, formatDate, statusClass } from '../utils/format';
@@ -16,23 +14,30 @@ export default function Bookings() {
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [paymentFilter, setPaymentFilter] = useState('');
+  const [sessionDate, setSessionDate] = useState('');
+  const [sessionDateTo, setSessionDateTo] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
   const [rescheduleBooking, setRescheduleBooking] = useState(null);
-  const { searchInput, setSearchInput, search } = useDebouncedSearch();
 
   const load = useCallback(() => {
     setLoading(true);
     const params = {};
     if (statusFilter) params.status = statusFilter;
     if (paymentFilter) params.paymentStatus = paymentFilter;
-    if (search) params.search = search;
+    if (sessionDate && sessionDateTo && sessionDate !== sessionDateTo) {
+      params.dateFrom = sessionDate;
+      params.dateTo = sessionDateTo;
+    } else {
+      const day = sessionDate || sessionDateTo;
+      if (day) params.date = day;
+    }
 
     bookingApi
       .getAll(params)
       .then((res) => setBookings(res.data || []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [statusFilter, paymentFilter, search]);
+  }, [statusFilter, paymentFilter, sessionDate, sessionDateTo]);
 
   useEffect(() => {
     load();
@@ -50,16 +55,45 @@ export default function Bookings() {
     }
   };
 
+  const clearDateFilters = () => {
+    setSessionDate('');
+    setSessionDateTo('');
+  };
+
+  const hasDateFilter = Boolean(sessionDate || sessionDateTo);
+
   return (
     <>
       <PageHeader title="Bookings" subtitle="Manage session requests and confirmations" />
 
       <section className="toolbar">
-        <SearchField
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="Customer, service, time…"
-        />
+        <label>
+          Session date
+          <input
+            type="date"
+            value={sessionDate}
+            onChange={(e) => setSessionDate(e.target.value)}
+            title="One day when end date is empty"
+          />
+        </label>
+        <label>
+          End date
+          <input
+            type="date"
+            value={sessionDateTo}
+            min={sessionDate || undefined}
+            onChange={(e) => setSessionDateTo(e.target.value)}
+          />
+        </label>
+        {hasDateFilter && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm toolbar-clear-dates"
+            onClick={clearDateFilters}
+          >
+            Clear dates
+          </button>
+        )}
         <label>
           Booking status
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
@@ -89,8 +123,8 @@ export default function Bookings() {
           <p className="muted panel__empty">Loading bookings…</p>
         ) : bookings.length === 0 ? (
           <p className="muted panel__empty">
-            {search || statusFilter || paymentFilter
-              ? 'No bookings match your search or filters.'
+            {statusFilter || paymentFilter || hasDateFilter
+              ? 'No bookings match your filters.'
               : 'No bookings yet.'}
           </p>
         ) : (

@@ -710,6 +710,40 @@ textarea {
   border-radius: 8px;
 }
 
+.password-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 3.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.2rem 0.45rem;
+  border: none;
+  background: transparent;
+  color: var(--accent, #7c3aed);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.password-toggle:hover {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--accent, #7c3aed);
+  outline-offset: 2px;
+}
+
 .login-form__hint {
   font-size: 0.85rem;
   color: var(--muted);
@@ -1149,11 +1183,25 @@ textarea {
   border-radius: 8px;
 }
 
-.toolbar input[type='search'] {
+.toolbar input[type='search'],
+.toolbar input[type='date'] {
   min-width: 220px;
   padding: 0.45rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: 8px;
+  font: inherit;
+}
+
+.toolbar input[type='date'] {
+  min-width: 10.5rem;
+}
+
+.toolbar .toolbar-clear-dates {
+  align-self: flex-end;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  min-height: 0;
 }
 
 .checkbox-label {

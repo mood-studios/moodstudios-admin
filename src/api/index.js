@@ -44,6 +44,8 @@ export const userApi = {
   },
   getById: (id) => apiFetch(`/users/${id}`),
   getCustomers: () => apiFetch('/users/customers'),
+  createCustomer: (body) =>
+    apiFetch('/users/customers', { method: 'POST', body: JSON.stringify(body) }),
   update: (id, body) =>
     apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id) => apiFetch(`/users/${id}`, { method: 'DELETE' }),

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
+import PasswordField from '../components/PasswordField';
 import Modal from '../components/Modal';
 import SearchField from '../components/SearchField';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
@@ -14,11 +15,12 @@ const ROLE_OPTIONS = [
   { value: 'customer', label: 'Customers' },
 ];
 
-const VERIFIED_OPTIONS = [
-  { value: '', label: 'All' },
-  { value: 'true', label: 'Verified' },
-  { value: 'false', label: 'Not verified' },
-];
+const emptyCreateForm = () => ({
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+});
 
 export default function Users() {
   const { confirm } = useDialog();
@@ -28,24 +30,25 @@ export default function Users() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
-  const [verifiedFilter, setVerifiedFilter] = useState('');
   const { searchInput, setSearchInput, search } = useDebouncedSearch();
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', phone: '', role: 'customer', isVerified: false });
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ name: '', phone: '', role: 'customer' });
+  const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     userApi
-      .getAll({ role: roleFilter, isVerified: verifiedFilter, search, page, limit: 15 })
+      .getAll({ role: roleFilter, search, page, limit: 15 })
       .then((res) => {
         setUsers(res.data || []);
         setPagination(res.pagination || { page: 1, pages: 1, total: 0 });
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [roleFilter, verifiedFilter, search, page]);
+  }, [roleFilter, search, page]);
 
   useEffect(() => {
     const role = searchParams.get('role');
@@ -66,7 +69,6 @@ export default function Users() {
       name: user.name,
       phone: user.phone || '',
       role: user.role,
-      isVerified: Boolean(user.isVerified),
     });
   };
 
@@ -76,8 +78,30 @@ export default function Users() {
     setSaving(true);
     setError('');
     try {
-      await userApi.update(editing._id, form);
+      const payload = { name: form.name, phone: form.phone, role: form.role };
+      if (form.role === 'customer') {
+        payload.isVerified = true;
+      }
+      await userApi.update(editing._id, payload);
       setEditing(null);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await userApi.createCustomer(createForm);
+      setCreating(false);
+      setCreateForm(emptyCreateForm());
+      setRoleFilter('customer');
+      setPage(1);
       load();
     } catch (err) {
       setError(err.message);
@@ -105,7 +129,15 @@ export default function Users() {
 
   return (
     <>
-      <PageHeader title="User management" subtitle="View and manage all accounts" />
+      <PageHeader
+        title="User management"
+        subtitle="View and manage all accounts"
+        actions={
+          <button type="button" className="btn btn--primary" onClick={() => setCreating(true)}>
+            Create customer
+          </button>
+        }
+      />
 
       <section className="toolbar">
         <SearchField
@@ -129,22 +161,6 @@ export default function Users() {
             ))}
           </select>
         </label>
-        <label>
-          Verified
-          <select
-            value={verifiedFilter}
-            onChange={(e) => {
-              setVerifiedFilter(e.target.value);
-              setPage(1);
-            }}
-          >
-            {VERIFIED_OPTIONS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
       </section>
 
       {error && <p className="form-error">{error}</p>}
@@ -154,9 +170,7 @@ export default function Users() {
           <p className="muted panel__empty">Loading users…</p>
         ) : users.length === 0 ? (
           <p className="muted panel__empty">
-            {search || roleFilter || verifiedFilter
-              ? 'No users match your search or filters.'
-              : 'No users found.'}
+            {search || roleFilter ? 'No users match your search or filters.' : 'No users found.'}
           </p>
         ) : (
           <>
@@ -167,7 +181,6 @@ export default function Users() {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Role</th>
-                  <th>Verified</th>
                   <th>Joined</th>
                   <th></th>
                 </tr>
@@ -185,7 +198,6 @@ export default function Users() {
                         {u.role}
                       </span>
                     </td>
-                    <td>{u.isVerified ? 'Yes' : 'No'}</td>
                     <td>{formatDateTime(u.createdAt)}</td>
                     <td className="table-actions">
                       <button type="button" className="btn btn--ghost btn--sm" onClick={() => openEdit(u)}>
@@ -239,11 +251,69 @@ export default function Users() {
         )}
       </section>
 
+      {creating && (
+        <Modal title="Create customer account" onClose={() => setCreating(false)}>
+          <form className="form-stack" onSubmit={handleCreate}>
+            <p className="muted" style={{ margin: 0 }}>
+              Customer accounts are created as email-verified. Share the password securely with the
+              client.
+            </p>
+            <label>
+              Full name
+              <input
+                value={createForm.name}
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                required
+                autoComplete="off"
+              />
+            </label>
+            <label>
+              Phone
+              <input
+                value={createForm.phone}
+                onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+              />
+            </label>
+            <PasswordField
+              label="Password"
+              value={createForm.password}
+              onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <footer className="form-actions">
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => setCreating(false)}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="btn btn--primary" disabled={saving}>
+                {saving ? 'Creating…' : 'Create account'}
+              </button>
+            </footer>
+          </form>
+        </Modal>
+      )}
+
       {editing && (
         <Modal title="Edit user" onClose={() => setEditing(null)}>
           <form className="form-stack" onSubmit={handleSave}>
             <p className="muted" style={{ margin: 0 }}>
               {editing.email}
+              {editing.role === 'customer' ? ' · Verified customer' : ''}
             </p>
             <label>
               Name
@@ -263,14 +333,6 @@ export default function Users() {
                 <option value="customer">Customer</option>
                 <option value="admin">Admin</option>
               </select>
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={form.isVerified}
-                onChange={(e) => setForm({ ...form, isVerified: e.target.checked })}
-              />
-              Email verified
             </label>
             <footer className="form-actions">
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(null)} disabled={saving}>
