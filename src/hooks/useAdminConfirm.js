@@ -43,6 +43,13 @@ export function useAdminConfirm() {
       confirmLabel: 'Upload',
     });
 
+  const confirmLogout = (message = 'Are you sure you want to sign out?', title = 'Log out') =>
+    confirm({
+      title,
+      message,
+      confirmLabel: 'Log out',
+    });
+
   return {
     confirm,
     alert,
@@ -51,5 +58,6 @@ export function useAdminConfirm() {
     confirmSave,
     confirmUpdate,
     confirmUpload,
+    confirmLogout,
   };
 }

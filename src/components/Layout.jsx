@@ -18,11 +18,11 @@ const nav = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const { conversationCount } = useAdminInbox();
-  const { confirmUpdate } = useAdminConfirm();
+  const { confirmLogout } = useAdminConfirm();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    const ok = await confirmUpdate('Sign out of the admin panel?', 'Log out');
+    const ok = await confirmLogout('Are you sure you want to sign out of the admin panel?');
     if (!ok) return;
     await logout();
     navigate('/login');
