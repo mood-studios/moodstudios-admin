@@ -14,6 +14,8 @@ import Categories from './pages/Categories';
 import Gallery from './pages/Gallery';
 import FeaturedPhotos from './pages/FeaturedPhotos';
 import Chat from './pages/Chat';
+import Settings from './pages/Settings';
+import Calendar from './pages/Calendar';
 
 export default function App() {
   return (
@@ -35,6 +37,8 @@ export default function App() {
               <Route path="gallery" element={<Gallery />} />
               <Route path="featured-photos" element={<FeaturedPhotos />} />
               <Route path="chat" element={<Chat />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import RescheduleModal from '../components/RescheduleModal';
 import { useAdminConfirm } from '../hooks/useAdminConfirm';
@@ -6,7 +7,7 @@ import { bookingApi } from '../api';
 import { formatCurrency, formatDate, statusClass } from '../utils/format';
 
 const STATUS_OPTIONS = ['', 'pending', 'confirmed', 'declined', 'completed'];
-const PAYMENT_OPTIONS = ['', 'unpaid', 'pending', 'paid', 'failed', 'refunded'];
+const PAYMENT_OPTIONS = ['', 'unpaid', 'pending', 'paid', 'failed'];
 const ADMIN_ACTIONS = ['confirmed', 'declined', 'completed'];
 
 export default function Bookings() {
@@ -173,6 +174,14 @@ export default function Bookings() {
                     <span className={statusClass(b.paymentStatus)}>{b.paymentStatus}</span>
                   </td>
                   <td className="table-actions">
+                    {b.userId?._id && (
+                      <Link
+                        to={`/chat?customer=${b.userId._id}&bookingId=${b._id}`}
+                        className="btn btn--ghost btn--sm"
+                      >
+                        Message
+                      </Link>
+                    )}
                     {b.bookingStatus !== 'declined' && (
                       <button
                         type="button"

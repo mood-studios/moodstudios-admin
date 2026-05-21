@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import PageHeader from '../components/PageHeader';
 import { chatApi } from '../api';
@@ -41,9 +41,10 @@ const senderNameOf = (msg) => {
 export default function Chat() {
   const { user } = useAuth();
   const { refreshInboxCount } = useAdminInbox();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [customers, setCustomers] = useState([]);
   const [selectedId, setSelectedId] = useState(searchParams.get('customer') || '');
+  const [bookingId, setBookingId] = useState(searchParams.get('bookingId') || '');
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -54,12 +55,24 @@ export default function Chat() {
   const socketRef = useRef(null);
   const bottomRef = useRef(null);
   const selectedIdRef = useRef(selectedId);
+  const bookingIdRef = useRef(bookingId);
   const roomIdRef = useRef(roomId);
   const userIdRef = useRef(user?._id);
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
+
+  useEffect(() => {
+    bookingIdRef.current = bookingId;
+  }, [bookingId]);
+
+  useEffect(() => {
+    const customer = searchParams.get('customer');
+    const bid = searchParams.get('bookingId');
+    if (customer) setSelectedId(customer);
+    setBookingId(bid || '');
+  }, [searchParams]);
 
   useEffect(() => {
     roomIdRef.current = roomId;
@@ -88,18 +101,22 @@ export default function Chat() {
     const socket = socketRef.current;
     const receiverId = selectedIdRef.current;
     if (socket?.connected && receiverId) {
-      socket.emit('join_room', { receiverId: String(receiverId) });
+      socket.emit('join_room', {
+        receiverId: String(receiverId),
+        ...(bookingIdRef.current ? { bookingId: String(bookingIdRef.current) } : {}),
+      });
     }
   }, []);
 
-  const loadHistory = useCallback(async (partnerId, { quiet = false } = {}) => {
+  const loadHistory = useCallback(async (partnerId, { quiet = false, bookingId: bid } = {}) => {
     if (!partnerId) return;
+    const threadBookingId = bid !== undefined ? bid : bookingIdRef.current;
     if (!quiet) {
       setHistoryLoading(true);
       setHistoryError('');
     }
     try {
-      const res = await chatApi.getHistory(partnerId);
+      const res = await chatApi.getHistory(partnerId, threadBookingId || undefined);
       const nextRoom = res.data?.roomId || null;
       const nextMessages = res.data?.messages || [];
       setRoomId(nextRoom);
@@ -217,7 +234,7 @@ export default function Chat() {
     }
 
     loadHistory(selectedId).then(() => joinCurrentRoom());
-  }, [selectedId, user, loadHistory, joinCurrentRoom]);
+  }, [selectedId, bookingId, user, loadHistory, joinCurrentRoom]);
 
   useEffect(() => {
     if (!selectedId) return undefined;
@@ -225,7 +242,7 @@ export default function Chat() {
       loadHistory(selectedId, { quiet: true });
     }, 12000);
     return () => clearInterval(interval);
-  }, [selectedId, loadHistory]);
+  }, [selectedId, bookingId, loadHistory]);
 
   useEffect(() => {
     const onVisible = () => {
@@ -258,13 +275,19 @@ export default function Chat() {
     setText('');
 
     const socket = socketRef.current;
+    const threadBookingId = bookingIdRef.current || undefined;
+
     if (socket?.connected) {
-      socket.emit('send_message', { receiverId: String(selectedId), message: trimmed });
+      socket.emit('send_message', {
+        receiverId: String(selectedId),
+        message: trimmed,
+        ...(threadBookingId ? { bookingId: String(threadBookingId) } : {}),
+      });
       return;
     }
 
     try {
-      const res = await chatApi.sendMessage(selectedId, trimmed);
+      const res = await chatApi.sendMessage(selectedId, trimmed, threadBookingId);
       if (res.data) {
         setMessages((prev) => {
           const withoutTemp = prev.filter((m) => m._id !== tempId);
@@ -316,7 +339,11 @@ export default function Chat() {
                   <button
                     type="button"
                     className={`chat-list__item${String(selectedId) === String(c._id) ? ' chat-list__item--active' : ''}`}
-                    onClick={() => setSelectedId(String(c._id))}
+                    onClick={() => {
+                      setSelectedId(String(c._id));
+                      setBookingId('');
+                      setSearchParams({});
+                    }}
                   >
                     <strong>{c.name}</strong>
                     <small>{c.email}</small>
@@ -334,6 +361,26 @@ export default function Chat() {
                 <div>
                   <strong>{selected.name}</strong>
                   <span>{selected.email}</span>
+                  {bookingId ? (
+                    <p className="chat-booking-context muted" style={{ margin: '0.35rem 0 0' }}>
+                      Thread for booking{' '}
+                      <code style={{ fontSize: '0.85em' }}>{bookingId.slice(-8)}</code>
+                      {' · '}
+                      <Link to="/bookings">All bookings</Link>
+                      {' · '}
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        style={{ padding: 0, minHeight: 0 }}
+                        onClick={() => {
+                          setBookingId('');
+                          setSearchParams({ customer: selectedId });
+                        }}
+                      >
+                        General chat
+                      </button>
+                    </p>
+                  ) : null}
                 </div>
                 {socketLabel ? (
                   <span

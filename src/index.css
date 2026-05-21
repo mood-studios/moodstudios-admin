@@ -659,6 +659,46 @@ textarea {
   font-size: 0.9rem;
 }
 
+.form-success {
+  color: #2e7d32;
+  font-size: 0.9rem;
+}
+
+.form-fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+
+.form-fieldset legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.check-list label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.sidebar__settings-link {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+  text-decoration: none;
+}
+
 .muted {
   color: var(--muted);
 }

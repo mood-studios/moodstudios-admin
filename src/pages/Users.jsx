@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 import PasswordField from '../components/PasswordField';
 import Modal from '../components/Modal';
+import AdminBookModal from '../components/AdminBookModal';
 import SearchField from '../components/SearchField';
 import { useDebouncedSearch } from '../hooks/useDebouncedSearch';
 import { useAdminConfirm } from '../hooks/useAdminConfirm';
@@ -37,6 +38,7 @@ export default function Users() {
   const [form, setForm] = useState({ name: '', phone: '', role: 'customer' });
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [saving, setSaving] = useState(false);
+  const [bookingFor, setBookingFor] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -216,9 +218,18 @@ export default function Users() {
                         Edit
                       </button>
                       {u.role === 'customer' && (
-                        <Link to={`/chat?customer=${u._id}`} className="btn btn--ghost btn--sm">
-                          Message
-                        </Link>
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setBookingFor(u)}
+                          >
+                            Book
+                          </button>
+                          <Link to={`/chat?customer=${u._id}`} className="btn btn--ghost btn--sm">
+                            Message
+                          </Link>
+                        </>
                       )}
                       <button
                         type="button"
@@ -318,6 +329,10 @@ export default function Users() {
             </footer>
           </form>
         </Modal>
+      )}
+
+      {bookingFor && (
+        <AdminBookModal customer={bookingFor} onClose={() => setBookingFor(null)} onSaved={load} />
       )}
 
       {editing && (

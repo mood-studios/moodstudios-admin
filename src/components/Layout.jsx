@@ -6,6 +6,7 @@ import { useAdminConfirm } from '../hooks/useAdminConfirm';
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◫' },
   { to: '/bookings', label: 'Bookings', icon: '◷' },
+  { to: '/calendar', label: 'Calendar', icon: '▦' },
   { to: '/users', label: 'Users', icon: '◎' },
   { to: '/services', label: 'Services', icon: '◇' },
   { to: '/categories', label: 'Categories', icon: '▤' },
@@ -68,6 +69,9 @@ export default function Layout() {
               <span>{user?.email}</span>
             </div>
           </div>
+          <NavLink to="/settings" className="btn btn--ghost btn--sm sidebar__settings-link">
+            Settings
+          </NavLink>
           <button type="button" className="btn btn--ghost btn--sm" onClick={handleLogout}>
             Sign out
           </button>

@@ -14,6 +14,19 @@ const queryString = (params = {}) =>
     Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null))
   ).toString();
 
+export const blockedDayApi = {
+  list: (params = {}) => {
+    const q = queryString(params);
+    return apiFetch(`/blocked-days${q ? `?${q}` : ''}`);
+  },
+  block: (date, reason = '') =>
+    apiFetch('/blocked-days', {
+      method: 'POST',
+      body: JSON.stringify({ date, reason }),
+    }),
+  unblock: (id) => apiFetch(`/blocked-days/${id}`, { method: 'DELETE' }),
+};
+
 export const bookingApi = {
   getAll: (params = {}) => {
     const q = queryString(params);
@@ -35,6 +48,11 @@ export const bookingApi = {
       method: 'PATCH',
       body: JSON.stringify({ bookingDate, bookingTime }),
     }),
+  createForCustomer: (body) =>
+    apiFetch('/bookings/admin', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 export const userApi = {
@@ -49,6 +67,11 @@ export const userApi = {
   update: (id, body) =>
     apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id) => apiFetch(`/users/${id}`, { method: 'DELETE' }),
+  changePassword: (currentPassword, newPassword) =>
+    apiFetch('/users/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 export const activityLogApi = {
