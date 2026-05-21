@@ -113,6 +113,24 @@ textarea {
   transition: background 0.15s, color 0.15s;
 }
 
+.sidebar__link-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar__badge {
+  margin-left: auto;
+  min-width: 1.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #e53935;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .sidebar__link:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
@@ -1356,6 +1374,13 @@ textarea {
 
 .album-card__head h3 {
   font-size: 1rem;
+}
+
+.album-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
 }
 
 .photo-grid {

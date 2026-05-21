@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAdminInbox } from '../context/AdminInboxContext';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: '◫' },
@@ -15,6 +16,7 @@ const nav = [
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { conversationCount } = useAdminInbox();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -45,7 +47,12 @@ export default function Layout() {
               }
             >
               <span className="sidebar__icon">{item.icon}</span>
-              {item.label}
+              <span className="sidebar__link-label">{item.label}</span>
+              {item.to === '/chat' && conversationCount > 0 ? (
+                <span className="sidebar__badge" aria-label={`${conversationCount} unread conversations`}>
+                  {conversationCount > 99 ? '99+' : conversationCount}
+                </span>
+              ) : null}
             </NavLink>
           ))}
         </nav>

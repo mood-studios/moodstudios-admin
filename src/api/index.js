@@ -147,9 +147,33 @@ export const galleryApi = {
   deletePhoto: (albumId, photoId) =>
     apiFetch(`/gallery/${albumId}/photos/${photoId}`, { method: 'DELETE' }),
   deleteAlbum: (id) => apiFetch(`/gallery/${id}`, { method: 'DELETE' }),
+  downloadAlbum: async (albumId, filename = 'album') => {
+    const API_BASE = import.meta.env.VITE_API_URL || '/api';
+    const res = await fetch(`${API_BASE}/gallery/${albumId}/download`, {
+      credentials: 'include',
+      headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || 'Download failed');
+    }
+    const blob = await res.blob();
+    const safe = String(filename).replace(/[^\w\-]+/g, '_').slice(0, 80) || 'album';
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = `${safe}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  },
 };
 
 export const chatApi = {
+  getInboxStats: () => apiFetch('/chat/inbox-stats'),
+  markRead: (roomId) =>
+    apiFetch('/chat/read', { method: 'PATCH', body: JSON.stringify({ roomId }) }),
   getPartners: () => apiFetch('/chat/partners'),
   getHistory: (receiverId, bookingId) => {
     const params = new URLSearchParams({ receiverId: String(receiverId) });

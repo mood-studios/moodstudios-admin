@@ -6,6 +6,7 @@ import { chatApi } from '../api';
 import { getToken } from '../api/client';
 import { getSocketUrl } from '../lib/apiConfig';
 import { useAuth } from '../context/AuthContext';
+import { useAdminInbox } from '../context/AdminInboxContext';
 
 const senderIdOf = (msg) => {
   const s = msg?.senderId;
@@ -39,6 +40,7 @@ const senderNameOf = (msg) => {
 
 export default function Chat() {
   const { user } = useAuth();
+  const { refreshInboxCount } = useAdminInbox();
   const [searchParams] = useSearchParams();
   const [customers, setCustomers] = useState([]);
   const [selectedId, setSelectedId] = useState(searchParams.get('customer') || '');
@@ -106,6 +108,10 @@ export default function Chat() {
         if (quiet && nextMessages.length === 0 && prev.length > 0) return prev;
         return nextMessages;
       });
+      if (nextRoom) {
+        await chatApi.markRead(nextRoom);
+        refreshInboxCount();
+      }
     } catch (err) {
       if (!quiet) {
         setHistoryError(err.message || 'Could not load messages');
@@ -114,7 +120,7 @@ export default function Chat() {
     } finally {
       if (!quiet) setHistoryLoading(false);
     }
-  }, []);
+  }, [refreshInboxCount]);
 
   useEffect(() => {
     chatApi
@@ -176,6 +182,8 @@ export default function Chat() {
       const sameRoom = notifRoom && activeRoom && notifRoom === activeRoom;
       if (fromPartner || sameRoom) {
         if (activePartner) loadHistory(activePartner, { quiet: true });
+      } else {
+        refreshInboxCount();
       }
     };
 
@@ -195,7 +203,7 @@ export default function Chat() {
       socketRef.current = null;
       setSocketStatus('idle');
     };
-  }, [user, appendMessage, joinCurrentRoom, loadHistory]);
+  }, [user, appendMessage, joinCurrentRoom, loadHistory, refreshInboxCount]);
 
   useEffect(() => {
     if (!selectedId || !user) {

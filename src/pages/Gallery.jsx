@@ -23,7 +23,11 @@ export default function Gallery() {
     bookingApi
       .getAll()
       .then((res) => {
-        const list = res.data || [];
+        const list = (res.data || []).filter(
+          (b) =>
+            (b.bookingStatus === 'confirmed' || b.bookingStatus === 'completed') &&
+            b.paymentStatus === 'paid'
+        );
         setBookings(list);
         if (list.length) setSelectedBooking(list[0]._id);
       })
@@ -68,6 +72,31 @@ export default function Gallery() {
       setAlbums(res.data || []);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const deleteAlbum = async (albumId, albumName) => {
+    const ok = await confirm({
+      title: 'Delete album',
+      message: `Delete "${albumName}" and all its photos? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await galleryApi.deleteAlbum(albumId);
+      const res = await galleryApi.getByBooking(selectedBooking);
+      setAlbums(res.data || []);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const downloadAlbum = async (albumId, albumName) => {
+    try {
+      await galleryApi.downloadAlbum(albumId, albumName);
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -125,7 +154,9 @@ export default function Gallery() {
       {loading ? (
         <p className="muted">Loading bookings…</p>
       ) : bookings.length === 0 ? (
-        <p className="muted panel__empty">No completed bookings yet. Mark bookings as completed first.</p>
+        <p className="muted panel__empty">
+          No confirmed, paid bookings yet. Confirm bookings and complete payment first.
+        </p>
       ) : (
         <section className="gallery-layout">
           {selected && (
@@ -144,13 +175,31 @@ export default function Gallery() {
               <article key={album._id} className="album-card">
                 <header className="album-card__head">
                   <h3>{album.albumName}</h3>
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => setUploadAlbumId(album._id)}
-                  >
-                    Upload photos
-                  </button>
+                  <div className="album-card__actions">
+                    {(album.photos || []).length > 0 ? (
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => downloadAlbum(album._id, album.albumName)}
+                      >
+                        Download
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      onClick={() => setUploadAlbumId(album._id)}
+                    >
+                      Upload photos
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--danger btn--sm"
+                      onClick={() => deleteAlbum(album._id, album.albumName)}
+                    >
+                      Delete album
+                    </button>
+                  </div>
                 </header>
                 <section className="photo-grid">
                   {(album.photos || []).map((photo) => (
