@@ -43,7 +43,13 @@ export default function Users() {
   const load = useCallback(() => {
     setLoading(true);
     userApi
-      .getAll({ role: roleFilter, search, page, limit: 15 })
+      .getAll({
+        role: roleFilter,
+        search,
+        page,
+        limit: 15,
+        archived: 'false',
+      })
       .then((res) => {
         setUsers(res.data || []);
         setPagination(res.pagination || { page: 1, pages: 1, total: 0 });
@@ -128,13 +134,13 @@ export default function Users() {
 
   const handleDelete = async (user) => {
     const ok = await confirmDelete(
-      `Delete ${user.name} (${user.email})? This cannot be undone.`,
+      `Delete ${user.name} (${user.email})? The account will be moved to Archived accounts and they will no longer be able to sign in.`,
       'Delete user'
     );
     if (!ok) return;
     setError('');
     try {
-      await userApi.delete(user._id);
+      await userApi.archive(user._id);
       load();
     } catch (err) {
       setError(err.message);
@@ -145,11 +151,16 @@ export default function Users() {
     <>
       <PageHeader
         title="User management"
-        subtitle="View and manage all accounts"
+        subtitle="View and manage active accounts"
         actions={
-          <button type="button" className="btn btn--primary" onClick={() => setCreating(true)}>
-            Create customer
-          </button>
+          <>
+            <Link to="/archived-users" className="btn btn--ghost">
+              Archived accounts
+            </Link>
+            <button type="button" className="btn btn--primary" onClick={() => setCreating(true)}>
+              Create customer
+            </button>
+          </>
         }
       />
 

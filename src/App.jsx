@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import Users from './pages/Users';
+import ArchivedUsers from './pages/ArchivedUsers';
 import ActivityLogs from './pages/ActivityLogs';
 import Services from './pages/Services';
 import Categories from './pages/Categories';
@@ -30,6 +31,7 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="bookings" element={<Bookings />} />
               <Route path="users" element={<Users />} />
+              <Route path="archived-users" element={<ArchivedUsers />} />
               <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="customers" element={<Navigate to="/users?role=customer" replace />} />
               <Route path="services" element={<Services />} />

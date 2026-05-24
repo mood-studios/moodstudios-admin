@@ -8,6 +8,7 @@ const nav = [
   { to: '/bookings', label: 'Bookings', icon: '◷' },
   { to: '/calendar', label: 'Calendar', icon: '▦' },
   { to: '/users', label: 'Users', icon: '◎' },
+  { to: '/archived-users', label: 'Archived', icon: '◌' },
   { to: '/services', label: 'Services', icon: '◇' },
   { to: '/categories', label: 'Categories', icon: '▤' },
   { to: '/gallery', label: 'Gallery', icon: '▣' },

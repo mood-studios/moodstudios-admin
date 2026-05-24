@@ -67,6 +67,8 @@ export const userApi = {
   update: (id, body) =>
     apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id) => apiFetch(`/users/${id}`, { method: 'DELETE' }),
+  archive: (id) => apiFetch(`/users/${id}`, { method: 'DELETE' }),
+  restore: (id) => apiFetch(`/users/${id}/restore`, { method: 'PATCH' }),
   changePassword: (currentPassword, newPassword) =>
     apiFetch('/users/change-password', {
       method: 'PUT',
