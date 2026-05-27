@@ -239,8 +239,9 @@ export default function Chat() {
   useEffect(() => {
     if (!selectedId) return undefined;
     const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
       loadHistory(selectedId, { quiet: true });
-    }, 12000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [selectedId, bookingId, loadHistory]);
 
